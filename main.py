@@ -12,7 +12,7 @@ import os
 from helper.storage import load_json
 from gui.login_screen import LoginFrame
 from gui.register_screen import RegisterFrame
-#from gui.dashboard import MainDCMFrame
+from gui.dashboard import Dashboard
 
 
 class DCMApp:
@@ -29,11 +29,14 @@ class DCMApp:
         # Container frame - essentially holding all frames as cards which can be cycled through
         container = tk.Frame(self.root)
         container.pack(fill="both", expand=True)
+        
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
 
         # Initialize all GUI frames - for loop creates a new instance of each frame on startup
         # then places ontop of each other in the same spot using the grid function
         self.frames = {}
-        for FrameClass in (LoginFrame, RegisterFrame):
+        for FrameClass in (LoginFrame, RegisterFrame, Dashboard):
             name = FrameClass.__name__.replace("Frame", "")
             frame = FrameClass(container, self)
             self.frames[name] = frame
