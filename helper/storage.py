@@ -3,6 +3,9 @@
 import json
 import os
 
+
+PATIENTS_FILE = os.path.join("data", "patients.json")
+
 # helper function to load the user data from user.json 
 def load_json(filepath, default_data):
     if not os.path.exists(filepath):
@@ -18,3 +21,37 @@ def save_json(filepath, data):
 
     with open(filepath, "w") as f:
         json.dump(data, f, indent=4)
+        
+        
+def load_all_patients():
+    if not os.path.exists(PATIENTS_FILE):
+        return []
+    try:
+        with open(PATIENTS_FILE, "r") as f:
+            data = json.load(f)
+            return data.get("patients", [])
+    except:
+        return []
+
+
+def load_patient_by_name(name):
+    patients = load_all_patients()
+    for p in patients:
+        if p["name"] == name:
+            return p
+    return None
+
+
+def save_patient(patient):
+    patients = load_all_patients()
+    updated = False
+    for i in range(len(patients)):
+        if patients[i]["id"] == patient["id"]:
+            patients[i] = patient
+            updated = True
+            break
+    if not updated:
+        patients.append(patient)
+
+    with open(PATIENTS_FILE, "w") as f:
+        json.dump({"patients": patients}, f, indent=4)
