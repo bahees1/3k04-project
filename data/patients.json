@@ -18,18 +18,52 @@
         },
         {
             "id": "P002",
+            "name": "will",
+            "device": {
+                "model": "dr1",
+                "serial": "1234567",
+                "parameters": {
+                    "lower_rate_limit": "123",
+                    "upper_rate_limit": "12",
+                    "atrial_amplitude": "123",
+                    "ventricular_amplitude": "123",
+                    "atrial_pulse_width": "123",
+                    "ventricular_pulse_width": "12"
+                }
+            }
+        },
+        {
+            "id": "P003",
             "name": "bob",
             "device": {
                 "model": "dr1",
-                "serial": "1234",
+                "serial": "1234567",
                 "parameters": {
                     "lower_rate_limit": "12",
-                    "upper_rate_limit": "12",
-                    "atrial_amplitude": "12",
-                    "ventricular_amplitude": "12",
+                    "upper_rate_limit": "14",
+                    "atrial_amplitude": "14",
+                    "ventricular_amplitude": "14",
                     "atrial_pulse_width": "12",
                     "ventricular_pulse_width": "12"
                 }
+            }
+        },
+        {
+            "id": "P004",
+            "name": "paul",
+            "device": {
+                "model": "dr1",
+                "serial": "",
+                "parameters": {}
+            }
+        },
+        {
+            "id": "P005",
+            "name": "Sarujan",
+            "device": {
+                "model": "Dr1",
+                "serial": "123456789",
+                "parameters": {}
             }
         }
     ]

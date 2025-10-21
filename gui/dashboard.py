@@ -33,13 +33,13 @@ class Dashboard(tk.Frame):
         )
         self.pacemaker_status_label.grid(row=0, column=1, sticky="e")
 
-        # Main content
+        # Main content area
         main_content = tk.Frame(self)
         main_content.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
         main_content.grid_columnconfigure(0, weight=1)
         main_content.grid_columnconfigure(1, weight=1)
 
-        # Patient selector
+        # Patient selector dropdown
         selector_frame = tk.Frame(main_content)
         selector_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 10))
 
@@ -48,7 +48,7 @@ class Dashboard(tk.Frame):
         self.patient_dropdown = tk.OptionMenu(selector_frame, self.patient_var, "")
         self.patient_dropdown.pack(side="left")
 
-        # Left panel: Patient Info
+        # Patient info panel
         patient_frame = tk.LabelFrame(main_content, text="Patient Info")
         patient_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
 
@@ -57,11 +57,13 @@ class Dashboard(tk.Frame):
         for i, field in enumerate(fields):
             label = tk.Label(patient_frame, text=field)
             label.grid(row=i, column=0, sticky="w", padx=5, pady=5)
-            entry = tk.Entry(patient_frame, bg=entry_bg, fg=entry_fg)
+            entry = tk.Entry(patient_frame, bg=entry_bg, fg=entry_fg, insertbackground="black")
             entry.grid(row=i, column=1, padx=5, pady=5)
+            if field == "ID":
+                entry.config(state="disabled")  # Make ID field read-only
             self.patient_entries[field] = entry
 
-        # Right panel: Device & Parameters
+        # Device parameters panel
         param_frame = tk.LabelFrame(main_content, text="Device & Parameters")
         param_frame.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
 
@@ -75,7 +77,7 @@ class Dashboard(tk.Frame):
         for i, field in enumerate(param_fields):
             label = tk.Label(param_frame, text=field)
             label.grid(row=i, column=0, sticky="w", padx=5, pady=5)
-            entry = tk.Entry(param_frame, bg=entry_bg, fg=entry_fg)
+            entry = tk.Entry(param_frame, bg=entry_bg, fg=entry_fg, insertbackground="black")
             entry.grid(row=i, column=1, padx=5, pady=5)
             self.param_entries[field] = entry
 
@@ -100,7 +102,7 @@ class Dashboard(tk.Frame):
         )
         logout_button.grid(row=0, column=3, padx=5)
 
-        # Load patients
+        # Load patients into memory and populate dropdown
         self.patients = storage.load_all_patients()
         self.patient = None
         self.refresh_patient_dropdown()
@@ -116,19 +118,16 @@ class Dashboard(tk.Frame):
             self.patient_var.set("No patients found")
             return
 
-        names = []
         for p in self.patients:
-            names.append(p["name"])
-            menu.add_command(
-                label=p["name"],
-                command=lambda n=p["name"]: self.load_selected_patient(n)
-            )
+            name = p.get("name", "Unnamed")
+            menu.add_command(label=name, command=lambda n=name: self.load_selected_patient(n))
 
         if self.patient:
-            self.patient_var.set(self.patient["name"])
+            self.patient_var.set(self.patient.get("name", ""))
         else:
-            self.patient_var.set(names[0])
-            self.load_selected_patient(names[0])
+            first_name = self.patients[0].get("name", "")
+            self.patient_var.set(first_name)
+            self.load_selected_patient(first_name)
 
     # -----------------------------
     # Load selected patient
@@ -138,13 +137,16 @@ class Dashboard(tk.Frame):
         if patient:
             self.patient = patient
             self.populate_fields(patient)
+            self.patient_var.set(name)
 
     # -----------------------------
-    # Populate fields
+    # Populate input fields
     # -----------------------------
     def populate_fields(self, patient):
+        self.patient_entries["ID"].config(state="normal")
         self.patient_entries["ID"].delete(0, tk.END)
         self.patient_entries["ID"].insert(0, patient.get("id", ""))
+        self.patient_entries["ID"].config(state="disabled")
 
         self.patient_entries["Name"].delete(0, tk.END)
         self.patient_entries["Name"].insert(0, patient.get("name", ""))
@@ -170,38 +172,97 @@ class Dashboard(tk.Frame):
             self.param_entries[field_name].insert(0, parameters.get(key, ""))
 
     # -----------------------------
-    # Button actions
+    # Clear input fields for new patient
     # -----------------------------
     def clear_fields(self):
         for key in self.patient_entries:
+            if key == "ID":
+                continue
             self.patient_entries[key].delete(0, tk.END)
         for key in self.param_entries:
             self.param_entries[key].delete(0, tk.END)
         self.patient = None
 
+        # Generate and insert new ID
+        new_id = self.generate_unique_patient_id()
+        self.patient_entries["ID"].config(state="normal")
+        self.patient_entries["ID"].delete(0, tk.END)
+        self.patient_entries["ID"].insert(0, new_id)
+        self.patient_entries["ID"].config(state="disabled")
+
+        self.patient_var.set("New Patient")
+
+    # -----------------------------
+    # Generate unique patient ID
+    # -----------------------------
+    def generate_unique_patient_id(self):
+        if not self.patients:
+            return "P001"
+        existing_ids = []
+        for p in self.patients:
+            pid = p.get("id", "")
+            if pid.startswith("P") and pid[1:].isdigit():
+                existing_ids.append(int(pid[1:]))
+        next_num = max(existing_ids, default=0) + 1
+        return f"P{next_num:03d}"
+
+    # -----------------------------
+    # Save patient info
+    # -----------------------------
     def save_patient(self):
+        # Retrieve and sanitize input values
+        patient_id = self.patient_entries["ID"].get().strip()
+        patient_name = self.patient_entries["Name"].get().strip().capitalize()
+        model = self.param_entries["Model"].get().strip().capitalize()
+        serial = self.param_entries["Serial"].get().strip().capitalize()
+
+        # Validation checks
+        if not patient_name:
+            messagebox.showwarning("Missing Field", "Patient Name is required before saving.")
+            return
+        if not model:
+            messagebox.showwarning("Missing Field", "Device Model is required before saving.")
+            return
+        if not serial:
+            messagebox.showwarning("Missing Field", "Device Serial is required before saving.")
+            return
+
+        # Collect device parameters
+        parameters = {}
+        for key, field_name in [
+            ("lower_rate_limit", "Lower Rate Limit"),
+            ("upper_rate_limit", "Upper Rate Limit"),
+            ("atrial_amplitude", "Atrial Amplitude"),
+            ("ventricular_amplitude", "Ventricular Amplitude"),
+            ("atrial_pulse_width", "Atrial Pulse Width"),
+            ("ventricular_pulse_width", "Ventricular Pulse Width")
+        ]:
+            value = self.param_entries[field_name].get().strip()
+            if value:
+                parameters[key] = value
+
+        # Construct patient data structure
         new_patient = {
-            "id": self.patient_entries["ID"].get(),
-            "name": self.patient_entries["Name"].get(),
+            "id": patient_id,
+            "name": patient_name,
             "device": {
-                "model": self.param_entries["Model"].get(),
-                "serial": self.param_entries["Serial"].get(),
-                "parameters": {
-                    "lower_rate_limit": self.param_entries["Lower Rate Limit"].get(),
-                    "upper_rate_limit": self.param_entries["Upper Rate Limit"].get(),
-                    "atrial_amplitude": self.param_entries["Atrial Amplitude"].get(),
-                    "ventricular_amplitude": self.param_entries["Ventricular Amplitude"].get(),
-                    "atrial_pulse_width": self.param_entries["Atrial Pulse Width"].get(),
-                    "ventricular_pulse_width": self.param_entries["Ventricular Pulse Width"].get()
-                }
+                "model": model,
+                "serial": serial,
+                "parameters": parameters
             }
         }
 
+        # Save data
         storage.save_patient(new_patient)
-        self.patient = new_patient
         self.patients = storage.load_all_patients()
+        self.patient = new_patient
         self.refresh_patient_dropdown()
-        messagebox.showinfo("Saved", "Patient data saved successfully!")
+        self.patient_var.set(patient_name)
 
+        messagebox.showinfo("Saved", f"Patient {patient_id} saved successfully!")
+
+    # -----------------------------
+    # About info
+    # -----------------------------
     def show_about(self):
         messagebox.showinfo("About", "Pacemaker DCM v1.0\nMcMaster University")

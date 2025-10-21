@@ -4,7 +4,7 @@ import json
 import os
 
 
-PATIENTS_FILE = os.path.join("data", "patients.json")
+PATIENTS_FILE = "patients.json"
 
 # helper function to load the user data from user.json 
 def load_json(filepath, default_data):
@@ -55,3 +55,9 @@ def save_patient(patient):
 
     with open(PATIENTS_FILE, "w") as f:
         json.dump({"patients": patients}, f, indent=4)
+        
+def delete_patient(name):
+    """Deletes a patient from the JSON file by their name."""
+    data = load_all_patients()
+    updated = [p for p in data if p.get("name") != name]
+    save_all_patients(updated)

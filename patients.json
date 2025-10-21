@@ -1,0 +1,20 @@
+{
+    "patients": [
+        {
+            "id": "P001",
+            "name": "will",
+            "device": {
+                "model": "dr1",
+                "serial": "1234556",
+                "parameters": {
+                    "lower_rate_limit": "12",
+                    "upper_rate_limit": "14",
+                    "atrial_amplitude": "15",
+                    "ventricular_amplitude": "16",
+                    "atrial_pulse_width": "16",
+                    "ventricular_pulse_width": "16"
+                }
+            }
+        }
+    ]
+}
