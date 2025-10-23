@@ -23,6 +23,9 @@ def save_json(filepath, data):
         json.dump(data, f, indent=4)
         
         
+# -----------------------------
+# Load all patients from file
+# -----------------------------
 def load_all_patients():
     if not os.path.exists(PATIENTS_FILE):
         return []
@@ -33,7 +36,9 @@ def load_all_patients():
     except:
         return []
 
-
+# -----------------------------
+# Load a patient by name
+# -----------------------------
 def load_patient_by_name(name):
     patients = load_all_patients()
     for p in patients:
@@ -41,7 +46,9 @@ def load_patient_by_name(name):
             return p
     return None
 
-
+# -----------------------------
+# Save or update a patient
+# -----------------------------
 def save_patient(patient):
     patients = load_all_patients()
     updated = False
@@ -55,9 +62,13 @@ def save_patient(patient):
 
     with open(PATIENTS_FILE, "w") as f:
         json.dump({"patients": patients}, f, indent=4)
-        
-def delete_patient(name):
-    """Deletes a patient from the JSON file by their name."""
-    data = load_all_patients()
-    updated = [p for p in data if p.get("name") != name]
-    save_all_patients(updated)
+
+# -----------------------------
+# Delete a patient by ID
+# -----------------------------
+def delete_patient(patient_id):
+    patients = load_all_patients()
+    patients = [p for p in patients if p.get("id") != patient_id]
+
+    with open(PATIENTS_FILE, "w") as f:
+        json.dump({"patients": patients}, f, indent=4)

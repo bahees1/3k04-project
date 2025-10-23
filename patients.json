@@ -1,19 +1,30 @@
 {
     "patients": [
         {
-            "id": "P001",
-            "name": "will",
+            "id": "P002",
+            "name": "Bob",
             "device": {
-                "model": "dr1",
-                "serial": "1234556",
-                "parameters": {
-                    "lower_rate_limit": "12",
-                    "upper_rate_limit": "14",
-                    "atrial_amplitude": "15",
-                    "ventricular_amplitude": "16",
-                    "atrial_pulse_width": "16",
-                    "ventricular_pulse_width": "16"
-                }
+                "model": "Dr1",
+                "serial": "1234",
+                "parameters": {}
+            }
+        },
+        {
+            "id": "P003",
+            "name": "Will",
+            "device": {
+                "model": "Dr1",
+                "serial": "890",
+                "parameters": {}
+            }
+        },
+        {
+            "id": "P004",
+            "name": "Billy",
+            "device": {
+                "model": "Dr2",
+                "serial": "23r",
+                "parameters": {}
             }
         }
     ]
