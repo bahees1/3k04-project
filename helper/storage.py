@@ -1,10 +1,11 @@
+# STORAGE HELPERS
 # place to read/write user data and parameter data
 
 import json
 import os
 
 
-PATIENTS_FILE = "patients.json"
+PATIENTS_FILE = os.path.join("data", "patients.json")
 
 # helper function to load the user data from user.json 
 def load_json(filepath, default_data):

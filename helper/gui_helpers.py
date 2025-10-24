@@ -1,3 +1,4 @@
+#GUI HELPERS
 import tkinter as tk
 from tkinter import messagebox
 
@@ -14,8 +15,9 @@ def create_footer_buttons(parent, dashboard):
     tk.Button(parent, text="New Patient", command=dashboard.clear_fields).grid(row=0, column=0, padx=5)
     tk.Button(parent, text="Save Patient", command=dashboard.save_patient).grid(row=0, column=1, padx=5)
     tk.Button(parent, text="Remove Patient", command=dashboard.remove_patient).grid(row=0, column=2, padx=5)
-    tk.Button(parent, text="About", command=dashboard.show_about).grid(row=0, column=3, padx=5)
-    tk.Button(parent, text="Logout", command=lambda: dashboard.controller.show_frame("Login"), fg="black").grid(row=0, column=4, padx=5)
+    tk.Button(parent, text="Clock", command=dashboard.show_clock).grid(row=0, column=3, padx=5)
+    tk.Button(parent, text="About", command=dashboard.show_about).grid(row=0, column=4, padx=5)
+    tk.Button(parent, text="Logout", command=lambda: dashboard.controller.show_frame("Login"), fg="black").grid(row=0, column=5, padx=5)
 
 def refresh_patient_dropdown(dashboard):
     menu = dashboard.patient_dropdown["menu"]

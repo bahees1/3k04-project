@@ -4,15 +4,30 @@
             "id": "P001",
             "name": "Vladdy",
             "device": {
-                "model": "DR1",
+                "model": "Dr1",
                 "serial": "00012345",
+                "dcm_serial": "DCM-001",
                 "parameters": {
                     "lower_rate_limit": "60",
                     "upper_rate_limit": "120",
-                    "atrial_amplitude": "3.5",
-                    "ventricular_amplitude": "3.5",
-                    "atrial_pulse_width": "0.4",
-                    "ventricular_pulse_width": "0.5"
+                    "ventricular_pulse_width": "12",
+                    "arp": "123",
+                    "vrp": "123",
+                    "ventricular_sensitivity": "123"
+                }
+            }
+        },
+        {
+            "id": "P002",
+            "name": "Billy",
+            "device": {
+                "model": "Dr1",
+                "serial": "123",
+                "dcm_serial": "DCM-002",
+                "parameters": {
+                    "lower_rate_limit": "123",
+                    "upper_rate_limit": "123",
+                    "atrial_amplitude": "123"
                 }
             }
         }

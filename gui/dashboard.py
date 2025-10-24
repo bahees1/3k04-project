@@ -1,9 +1,11 @@
 import tkinter as tk
 from tkinter import messagebox
+from datetime import datetime
 from helper import storage, patient_helpers, param_helpers, gui_helpers
 
 entry_bg = "#f8f8f8"
 entry_fg = "black"
+
 
 class Dashboard(tk.Frame):
     def __init__(self, parent, controller):
@@ -18,7 +20,7 @@ class Dashboard(tk.Frame):
         self.patient = None
         self.patients = storage.load_all_patients()
 
-        # Build GUI sections
+        # Build UI
         self.build_header()
         self.build_main_content()
         self.build_footer()
@@ -27,7 +29,7 @@ class Dashboard(tk.Frame):
         self.refresh_patient_dropdown()
 
     # -----------------------------
-    # Header section
+    # Header Section
     # -----------------------------
     def build_header(self):
         header = tk.Frame(self)
@@ -41,10 +43,20 @@ class Dashboard(tk.Frame):
         self.pacemaker_status_label = tk.Label(
             header, text="Pacemaker Status: Disconnected", font=("Arial", 12), fg="red"
         )
-        self.pacemaker_status_label.grid(row=0, column=1, sticky="e")
+        self.pacemaker_status_label.grid(row=0, column=1, sticky="w", pady=(5, 0))
+
+        # Connect / Quit buttons
+        button_frame = tk.Frame(header)
+        button_frame.grid(row=1, column=1, sticky="e")
+
+        connect_btn = tk.Button(button_frame, text="Connect", command=self.connect_pacemaker)
+        connect_btn.pack(side="left", padx=5)
+
+        quit_btn = tk.Button(button_frame, text="Quit", command=self.disconnect_pacemaker)
+        quit_btn.pack(side="left", padx=5)
 
     # -----------------------------
-    # Main content section
+    # Main Content Section
     # -----------------------------
     def build_main_content(self):
         main_content = tk.Frame(self)
@@ -61,24 +73,38 @@ class Dashboard(tk.Frame):
         self.patient_dropdown = tk.OptionMenu(selector_frame, self.patient_var, "")
         self.patient_dropdown.pack(side="left")
 
-        # Left panel: Patient Info
-        patient_frame = tk.LabelFrame(main_content, text="Patient Info")
+        # Left Panel: Patient + Device Info
+        patient_frame = tk.LabelFrame(main_content, text="Patient Info & Device")
         patient_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
 
+        # Patient info fields
         for i, field in enumerate(["ID", "Name"]):
             gui_helpers.create_labeled_entry(
                 parent=patient_frame,
                 label_text=field,
                 row=i,
                 entry_dict=self.patient_entries,
-                read_only=(field=="ID")
+                read_only=(field == "ID")
             )
 
-        # Right panel: Device & Parameters
-        param_frame = tk.LabelFrame(main_content, text="Device & Parameters")
+        # Device info
+        for j, field in enumerate(["Model", "Serial"], start=2):
+            gui_helpers.create_labeled_entry(
+                parent=patient_frame,
+                label_text=field,
+                row=j,
+                entry_dict=self.param_entries
+            )
+
+        # Right Panel: Device Parameters
+        param_frame = tk.LabelFrame(main_content, text="Device Parameters")
         param_frame.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
 
+        # Pull parameter fields dynamically from param_helpers
         for i, field in enumerate(param_helpers.PARAM_FIELDS):
+            # Skip Model and Serial here — they are already shown in the left panel
+            if field in ["Model", "Serial"]:
+                continue
             gui_helpers.create_labeled_entry(
                 parent=param_frame,
                 label_text=field,
@@ -87,7 +113,7 @@ class Dashboard(tk.Frame):
             )
 
     # -----------------------------
-    # Footer section
+    # Footer Section
     # -----------------------------
     def build_footer(self):
         footer = tk.Frame(self)
@@ -95,14 +121,22 @@ class Dashboard(tk.Frame):
         gui_helpers.create_footer_buttons(footer, self)
 
     # -----------------------------
-    # Refresh patient dropdown
+    # Connection Controls
+    # -----------------------------
+    def connect_pacemaker(self):
+        """Simulate pacemaker connection."""
+        self.pacemaker_status_label.config(text="Pacemaker Status: Connected", fg="green")
+
+    def disconnect_pacemaker(self):
+        """Simulate pacemaker disconnection."""
+        self.pacemaker_status_label.config(text="Pacemaker Status: Disconnected", fg="red")
+
+    # -----------------------------
+    # Patient Loading and Saving
     # -----------------------------
     def refresh_patient_dropdown(self):
         gui_helpers.refresh_patient_dropdown(self)
 
-    # -----------------------------
-    # Load selected patient
-    # -----------------------------
     def load_selected_patient(self, name):
         patient = storage.load_patient_by_name(name)
         if patient:
@@ -111,26 +145,38 @@ class Dashboard(tk.Frame):
             param_helpers.populate_parameter_entries(self.param_entries, patient.get("device", {}))
             self.patient_var.set(name)
 
-    # -----------------------------
-    # Clear all fields
-    # -----------------------------
     def clear_fields(self):
         patient_helpers.clear_fields(self)
 
-    # -----------------------------
-    # Save patient
-    # -----------------------------
     def save_patient(self):
         patient_helpers.save_patient(self)
 
-    # -----------------------------
-    # Remove patient
-    # -----------------------------
     def remove_patient(self):
         patient_helpers.remove_patient(self)
 
     # -----------------------------
-    # About info
+    # Clock & About Modals
     # -----------------------------
+    def show_clock(self):
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        messagebox.showinfo("Current Date & Time", f"Current system time:\n{now}")
+
     def show_about(self):
-        messagebox.showinfo("About", "Pacemaker DCM v1.0\nMcMaster University")
+        model_number = "DCM-1000"
+        software_version = "v1.0.0"
+        institution = "McMaster University"
+
+        dcm_serial = "N/A"
+        if self.patient and "device" in self.patient:
+            device = self.patient["device"]
+            if "dcm_serial" in device:
+                dcm_serial = device["dcm_serial"]
+
+        message = (
+            f"Pacemaker DCM Application\n\n"
+            f"Institution: {institution}\n"
+            f"Model Number: {model_number}\n"
+            f"Software Version: {software_version}\n"
+            f"DCM Serial Number: {dcm_serial}"
+        )
+        messagebox.showinfo("About", message)
