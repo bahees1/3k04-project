@@ -1,3 +1,4 @@
+# DASHBOARD MODULE
 import tkinter as tk
 from tkinter import messagebox
 from datetime import datetime
@@ -19,6 +20,7 @@ class Dashboard(tk.Frame):
         self.param_entries = {}
         self.patient = None
         self.patients = storage.load_all_patients()
+        self.current_mode = tk.StringVar(value="AOO")
 
         # Build UI
         self.build_header()
@@ -64,7 +66,7 @@ class Dashboard(tk.Frame):
         main_content.grid_columnconfigure(0, weight=1)
         main_content.grid_columnconfigure(1, weight=1)
 
-        # Patient selector
+        # patient and mode selector row
         selector_frame = tk.Frame(main_content)
         selector_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 10))
 
@@ -72,6 +74,12 @@ class Dashboard(tk.Frame):
         self.patient_var = tk.StringVar()
         self.patient_dropdown = tk.OptionMenu(selector_frame, self.patient_var, "")
         self.patient_dropdown.pack(side="left")
+
+        # pacing mode dropdown 
+        tk.Label(selector_frame, text="Pacing Mode:").pack(side="left", padx=(15, 5))
+        self.mode_dropdown = tk.OptionMenu(selector_frame, self.current_mode, "AOO", "VOO", "AAI", "VVI")
+        self.mode_dropdown.pack(side="left")
+        self.current_mode.trace_add("write", lambda *args: self.update_mode_parameters())
 
         # Left Panel: Patient + Device Info
         patient_frame = tk.LabelFrame(main_content, text="Patient Info & Device")
@@ -102,7 +110,6 @@ class Dashboard(tk.Frame):
 
         # Pull parameter fields dynamically from param_helpers
         for i, field in enumerate(param_helpers.PARAM_FIELDS):
-            # Skip Model and Serial here — they are already shown in the left panel
             if field in ["Model", "Serial"]:
                 continue
             gui_helpers.create_labeled_entry(
@@ -121,14 +128,12 @@ class Dashboard(tk.Frame):
         gui_helpers.create_footer_buttons(footer, self)
 
     # -----------------------------
-    # Connection Controls
+    # Visual indiciators for pacemaker connection
     # -----------------------------
     def connect_pacemaker(self):
-        """Simulate pacemaker connection."""
         self.pacemaker_status_label.config(text="Pacemaker Status: Connected", fg="green")
 
     def disconnect_pacemaker(self):
-        """Simulate pacemaker disconnection."""
         self.pacemaker_status_label.config(text="Pacemaker Status: Disconnected", fg="red")
 
     # -----------------------------
@@ -142,14 +147,54 @@ class Dashboard(tk.Frame):
         if patient:
             self.patient = patient
             patient_helpers.populate_patient_fields(self.patient_entries, patient)
-            param_helpers.populate_parameter_entries(self.param_entries, patient.get("device", {}))
+            self.update_mode_parameters()
             self.patient_var.set(name)
+
+    def update_mode_parameters(self):
+        # Load parameters for the selected pacing mode and adjust field availability
+        if not self.patient:
+            return
+
+        mode = self.current_mode.get()
+        device = self.patient.get("device", {})
+        modes = device.get("modes", {})
+        mode_data = modes.get(mode, {})
+        parameters = mode_data.get("parameters", {})
+
+        # Fill parameter fields
+        for key, field_name in param_helpers.PARAMETER_MAPPING:
+            entry = self.param_entries[field_name]
+            entry.config(state="normal")
+            entry.delete(0, "end")
+            if key in parameters:
+                entry.insert(0, parameters[key])
+
+        # Fill device info
+        self.param_entries["Model"].delete(0, "end")
+        self.param_entries["Model"].insert(0, device.get("model", ""))
+
+        self.param_entries["Serial"].delete(0, "end")
+        self.param_entries["Serial"].insert(0, device.get("serial", ""))
+
+        # -----------------------------
+        # Enable/disable fields by mode
+        # -----------------------------
+        allowed_fields = param_helpers.MODE_PARAMETER_MAP.get(mode, [])
+        for field_name, entry in self.param_entries.items():
+            if field_name in ["Model", "Serial"]:
+                continue
+            
+            if field_name in allowed_fields:
+                entry.config(state="normal", bg="#f8f8f8", fg="black")
+                
+            else:
+                entry.config(state="disabled", disabledbackground="#b6b4b4", disabledforeground="gray")
 
     def clear_fields(self):
         patient_helpers.clear_fields(self)
 
     def save_patient(self):
-        patient_helpers.save_patient(self)
+        patient_helpers.save_patient_from_dashboard(self)
 
     def remove_patient(self):
         patient_helpers.remove_patient(self)

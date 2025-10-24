@@ -22,12 +22,18 @@ def create_footer_buttons(parent, dashboard):
 def refresh_patient_dropdown(dashboard):
     menu = dashboard.patient_dropdown["menu"]
     menu.delete(0, "end")
+    
+    # placeholder if no patients exist
     if not dashboard.patients:
         dashboard.patient_var.set("No patients found")
         return
+    
+
     for p in dashboard.patients:
         name = p.get("name", "Unnamed")
         menu.add_command(label=name, command=lambda n=name: dashboard.load_selected_patient(n))
+        
+    # set the currently loaded patient in the dropdown, and load their data once selected
     if dashboard.patient:
         dashboard.patient_var.set(dashboard.patient.get("name", ""))
     else:

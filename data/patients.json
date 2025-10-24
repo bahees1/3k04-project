@@ -7,13 +7,35 @@
                 "model": "Dr1",
                 "serial": "00012345",
                 "dcm_serial": "DCM-001",
-                "parameters": {
-                    "lower_rate_limit": "60",
-                    "upper_rate_limit": "120",
-                    "ventricular_pulse_width": "12",
-                    "arp": "123",
-                    "vrp": "123",
-                    "ventricular_sensitivity": "123"
+                "modes": {
+                    "AOO": {
+                        "parameters": {
+                            "lower_rate_limit": "123",
+                            "upper_rate_limit": "123",
+                            "atrial_amplitude": "123",
+                            "atrial_pulse_width": "123123",
+                            "arp": "123",
+                            "vrp": "132"
+                        }
+                    },
+                    "VOO": {
+                        "parameters": {
+                            "lower_rate_limit": "123",
+                            "atrial_amplitude": "123123",
+                            "ventricular_pulse_width": "123",
+                            "vrp": "4567567"
+                        }
+                    },
+                    "AAI": {
+                        "parameters": {
+                            "lower_rate_limit": "789",
+                            "atrial_amplitude": "789",
+                            "ventricular_pulse_width": "789",
+                            "arp": "78",
+                            "vrp": "788",
+                            "atrial_sensitivity": "9"
+                        }
+                    }
                 }
             }
         },
@@ -28,6 +50,27 @@
                     "lower_rate_limit": "123",
                     "upper_rate_limit": "123",
                     "atrial_amplitude": "123"
+                }
+            }
+        },
+        {
+            "id": "P003",
+            "name": "Asd",
+            "device": {
+                "model": "Asd",
+                "serial": "Asd",
+                "dcm_serial": "DCM-003",
+                "modes": {
+                    "AOO": {
+                        "parameters": {
+                            "lower_rate_limit": "asd",
+                            "upper_rate_limit": "asd",
+                            "atrial_amplitude": "asdasd",
+                            "atrial_pulse_width": "asdasdasd",
+                            "arp": "123",
+                            "vrp": "132"
+                        }
+                    }
                 }
             }
         }

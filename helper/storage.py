@@ -50,14 +50,16 @@ def load_patient_by_name(name):
 # -----------------------------
 # Save or update a patient
 # -----------------------------
-def save_patient(patient):
+def save_patient_to_file(patient):
     patients = load_all_patients()
     updated = False
+    
     for i in range(len(patients)):
         if patients[i]["id"] == patient["id"]:
             patients[i] = patient
             updated = True
             break
+        
     if not updated:
         patients.append(patient)
 
@@ -68,8 +70,17 @@ def save_patient(patient):
 # Delete a patient by ID
 # -----------------------------
 def delete_patient(patient_id):
+    # Load all patients
     patients = load_all_patients()
-    patients = [p for p in patients if p.get("id") != patient_id]
-
+    updated_patients = []
+    
+    for patient in patients:
+        # Keep only patients whose id does NOT match the one we want to delete
+        if patient.get("id") != patient_id:
+            updated_patients.append(patient)
+    
+    # Save the updated list back to the JSON file
     with open(PATIENTS_FILE, "w") as f:
-        json.dump({"patients": patients}, f, indent=4)
+        json.dump({"patients": updated_patients}, f, indent=4)
+
+    print(f"Patient with ID {patient_id} has been deleted.")
