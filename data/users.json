@@ -21,8 +21,16 @@
             "password": "123"
         },
         {
+            "username": "saleanknee",
+            "password": "Saru"
+        },
+        {
             "username": "",
             "password": ""
+        },
+        {
+            "username": "12345",
+            "password": "12345"
         }
     ]
 }

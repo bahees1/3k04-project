@@ -45,12 +45,26 @@ class RegisterFrame(tk.Frame):
         username = self.username_entry.get().strip()
         password = self.password_entry.get().strip()
 
+        # -------------------------------------------------------------------------
+        # Simple input validation
+        # -------------------------------------------------------------------------
+        if len(username) == 0 or len(password) == 0:
+            messagebox.showerror("Invalid Input", "Username and password cannot be empty.")
+            return
+        
+        if len(username) < 3 or len(password) < 3:
+            messagebox.showerror("Invalid Input", "Username and password must be at least 3 characters long.")
+            return
+
+        # -------------------------------------------------------------------------
+        # Attempt to register user if input passes validation
+        # -------------------------------------------------------------------------
         success, message = register_user(
-            self.controller.data["users"], username, password, self.controller.data_path  # attempt to register user
+            self.controller.data["users"], username, password, self.controller.data_path
         )
 
         if success:
-            messagebox.showinfo("Success", message)  # if register successful, then user is taken to login page
+            messagebox.showinfo("Success", message)
             self.controller.show_frame("Login")
         else:
             messagebox.showerror("Error", message)
