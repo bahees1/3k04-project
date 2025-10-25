@@ -29,6 +29,7 @@ class Dashboard(tk.Frame):
 
         # Load patients into dropdown
         self.refresh_patient_dropdown()
+        self.update_mode_parameters()
 
     # -----------------------------
     # Header Section
@@ -151,15 +152,18 @@ class Dashboard(tk.Frame):
             self.patient_var.set(name)
 
     def update_mode_parameters(self):
-        # Load parameters for the selected pacing mode and adjust field availability
-        if not self.patient:
-            return
-
         mode = self.current_mode.get()
-        device = self.patient.get("device", {})
-        modes = device.get("modes", {})
-        mode_data = modes.get(mode, {})
-        parameters = mode_data.get("parameters", {})
+        allowed_fields = param_helpers.MODE_PARAMETER_MAP.get(mode, [])
+
+        # Use blank device if no patient exists
+        device = {"modes": {}}
+        parameters = {}
+
+        if self.patient:
+            device = self.patient.get("device", {})
+            modes = device.get("modes", {})
+            mode_data = modes.get(mode, {})
+            parameters = mode_data.get("parameters", {})
 
         # Fill parameter fields
         for key, field_name in param_helpers.PARAMETER_MAPPING:
@@ -176,19 +180,16 @@ class Dashboard(tk.Frame):
         self.param_entries["Serial"].delete(0, "end")
         self.param_entries["Serial"].insert(0, device.get("serial", ""))
 
-        # -----------------------------
-        # Enable/disable fields by mode
-        # -----------------------------
-        allowed_fields = param_helpers.MODE_PARAMETER_MAP.get(mode, [])
+        # Enable/disable fields based on mode
         for field_name, entry in self.param_entries.items():
             if field_name in ["Model", "Serial"]:
                 continue
-            
             if field_name in allowed_fields:
                 entry.config(state="normal", bg="#f8f8f8", fg="black")
-                
             else:
                 entry.config(state="disabled", disabledbackground="#b6b4b4", disabledforeground="gray")
+
+
 
     def clear_fields(self):
         patient_helpers.clear_fields(self)

@@ -53,6 +53,8 @@ def clear_fields(dashboard):
     dashboard.patient_entries["ID"].insert(0, new_id)
     dashboard.patient_entries["ID"].config(state="disabled")
     dashboard.patient_var.set("New Patient")
+    
+    dashboard.update_mode_parameters()
 
 # Save patient data from dashboard
 def save_patient_from_dashboard(dashboard):
