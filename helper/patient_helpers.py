@@ -1,4 +1,3 @@
-# PATIENT HELPERS
 import tkinter as tk
 from tkinter import messagebox
 from helper import storage, param_helpers
@@ -34,7 +33,8 @@ def populate_patient_fields(entries, patient):
     entries["Name"].delete(0, tk.END)
     entries["Name"].insert(0, patient.get("name", ""))
 
-# Populate device and parameter fields
+
+# Clear all fields for a new patient
 def clear_fields(dashboard):
     for key in dashboard.patient_entries:
         if key == "ID":
@@ -45,7 +45,6 @@ def clear_fields(dashboard):
         dashboard.param_entries[key].delete(0, "end")
     dashboard.patient = None
     
-    
     # Generate new ID
     new_id = generate_unique_patient_id(dashboard)
     dashboard.patient_entries["ID"].config(state="normal")
@@ -55,6 +54,71 @@ def clear_fields(dashboard):
     dashboard.patient_var.set("New Patient")
     
     dashboard.update_mode_parameters()
+
+
+# -----------------------------
+# Validation helper for parameter ranges
+# -----------------------------
+def validate_parameters(params):
+    errors = []
+
+    def in_range(val, low, high):
+        try:
+            num = float(val)
+            return low <= num <= high
+        except ValueError:
+            return False
+
+    # Lower/Upper Rate Limit
+    if not in_range(params.get("lower_rate_limit", 0), 30, 175):
+        errors.append("Lower Rate Limit must be between 30 and 175 ppm.")
+    if not in_range(params.get("upper_rate_limit", 0), 50, 175):
+        errors.append("Upper Rate Limit must be between 50 and 175 ppm.")
+    else:
+        try:
+            if float(params["upper_rate_limit"]) <= float(params["lower_rate_limit"]):
+                errors.append("Upper Rate Limit must be higher than Lower Rate Limit.")
+        except:
+            pass
+
+    # Common parameter ranges
+    for key, label, low, high, unit in [
+        ("atrial_amplitude", "Atrial Amplitude", 0.5, 7.0, "V"),
+        ("ventricular_amplitude", "Ventricular Amplitude", 0.5, 7.0, "V"),
+        ("atrial_pulse_width", "Atrial Pulse Width", 0.05, 1.9, "ms"),
+        ("ventricular_pulse_width", "Ventricular Pulse Width", 0.05, 1.9, "ms"),
+        ("atrial_sensitivity", "Atrial Sensitivity", 0.25, 10.0, "mV"),
+        ("ventricular_sensitivity", "Ventricular Sensitivity", 0.25, 10.0, "mV"),
+        ("arp", "ARP", 150, 500, "ms"),
+        ("vrp", "VRP", 150, 500, "ms"),
+        ("pvarp", "PVARP", 150, 500, "ms"),
+    ]:
+        val = params.get(key)
+        if val and not in_range(val, low, high):
+            errors.append(f"{label} must be between {low} and {high} {unit}.")
+
+    # Rate Smoothing
+    smoothing_allowed = {"0", "3", "6", "9", "12", "15", "18", "21", "25"}
+    if params.get("rate_smoothing") and params.get("rate_smoothing") not in smoothing_allowed:
+        errors.append("Rate Smoothing must be one of: 0, 3, 6, 9, 12, 15, 18, 21, 25.")
+
+    # Hysteresis
+    hysteresis_val = params.get("hysteresis", "")
+    if hysteresis_val and hysteresis_val.lower() != "off":
+        try:
+            lrl = float(params.get("lower_rate_limit", 0))
+            hys_val = float(hysteresis_val)
+            if abs(hys_val - lrl) > 0.1:
+                errors.append("Hysteresis must be 'Off' or equal to the Lower Rate Limit.")
+        except ValueError:
+            errors.append("Hysteresis must be 'Off' or a numeric value equal to LRL.")
+
+    # Show error popup if invalid
+    if errors:
+        messagebox.showerror("Invalid Parameters", "\n".join(errors))
+        return False
+    return True
+
 
 # Save patient data from dashboard
 def save_patient_from_dashboard(dashboard):
@@ -87,7 +151,13 @@ def save_patient_from_dashboard(dashboard):
         if value:
             parameters[key] = value
 
-    # build modes dictionary
+    # -----------------------------
+    # Validate parameters before saving
+    # -----------------------------
+    if not validate_parameters(parameters):
+        return
+
+    # Build modes dictionary
     modes = {}
     if dashboard.patient and "device" in dashboard.patient:
         modes = dashboard.patient["device"].get("modes", {})
@@ -111,6 +181,7 @@ def save_patient_from_dashboard(dashboard):
     dashboard.refresh_patient_dropdown()
     dashboard.patient_var.set(patient_name)
     messagebox.showinfo("Saved", f"Patient {patient_id} saved successfully!")
+
 
 def remove_patient(dashboard):
     if not dashboard.patient:
