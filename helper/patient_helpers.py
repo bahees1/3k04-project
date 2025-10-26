@@ -47,6 +47,8 @@ def clear_fields(dashboard):
     
     # Generate new ID
     new_id = generate_unique_patient_id(dashboard)
+    
+    # Set new ID in the ID entry
     dashboard.patient_entries["ID"].config(state="normal")
     dashboard.patient_entries["ID"].delete(0, "end")
     dashboard.patient_entries["ID"].insert(0, new_id)
@@ -62,6 +64,7 @@ def clear_fields(dashboard):
 def validate_parameters(params):
     errors = []
 
+    # Helper to check if value is in range
     def in_range(val, low, high):
         try:
             num = float(val)
@@ -72,6 +75,7 @@ def validate_parameters(params):
     # Lower/Upper Rate Limit
     if not in_range(params.get("lower_rate_limit", 0), 30, 175):
         errors.append("Lower Rate Limit must be between 30 and 175 ppm.")
+        
     if not in_range(params.get("upper_rate_limit", 0), 50, 175):
         errors.append("Upper Rate Limit must be between 50 and 175 ppm.")
     else:
@@ -93,12 +97,14 @@ def validate_parameters(params):
         ("vrp", "VRP", 150, 500, "ms"),
         ("pvarp", "PVARP", 150, 500, "ms"),
     ]:
+        # Check to see if value fits within range
         val = params.get(key)
         if val and not in_range(val, low, high):
             errors.append(f"{label} must be between {low} and {high} {unit}.")
 
     # Rate Smoothing
     smoothing_allowed = {"0", "3", "6", "9", "12", "15", "18", "21", "25"}
+    
     if params.get("rate_smoothing") and params.get("rate_smoothing") not in smoothing_allowed:
         errors.append("Rate Smoothing must be one of: 0, 3, 6, 9, 12, 15, 18, 21, 25.")
 
@@ -128,23 +134,27 @@ def save_patient_from_dashboard(dashboard):
     serial = dashboard.param_entries["Serial"].get().strip().capitalize()
     mode = dashboard.current_mode.get()
 
+    # User should input atleast patient name, device model and serial before saving
     if not patient_name or not model or not serial:
         messagebox.showwarning("Missing Fields", "Patient Name, Model, and Serial are required.")
         return
 
     existing_patients = storage.load_all_patients()
-
     existing_dcm_serials = []
+    
+    # Gather existing DCM serials to ensure uniqueness
     for p in existing_patients:
         if "device" in p and "dcm_serial" in p["device"]:
             existing_dcm_serials.append(p["device"]["dcm_serial"])
 
+    # Generate unique DCM serial if new patient
     if dashboard.patient and "device" in dashboard.patient and "dcm_serial" in dashboard.patient["device"]:
         dcm_serial = dashboard.patient["device"]["dcm_serial"]
     else:
         next_num = len(existing_dcm_serials) + 1
         dcm_serial = "DCM-" + str(next_num).zfill(3)
 
+    # Gather parameters from entries
     parameters = {}
     for key, field_name in param_helpers.PARAMETER_MAPPING:
         value = dashboard.param_entries[field_name].get().strip()
@@ -175,6 +185,7 @@ def save_patient_from_dashboard(dashboard):
         }
     }
 
+    # Save patient data to storage
     storage.save_patient_to_file(new_patient)
     dashboard.patients = storage.load_all_patients()
     dashboard.patient = new_patient
@@ -184,10 +195,12 @@ def save_patient_from_dashboard(dashboard):
 
 
 def remove_patient(dashboard):
+    # Remove the currently loaded patient
     if not dashboard.patient:
         messagebox.showwarning("No Selection", "No patient selected to remove.")
         return
 
+    # Get patient ID and confirm deletion
     patient_id = dashboard.patient.get("id")
     confirm = messagebox.askyesno("Confirm Delete", f"Are you sure you want to remove patient {patient_id}?")
     if confirm:

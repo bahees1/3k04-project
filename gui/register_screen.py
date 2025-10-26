@@ -18,12 +18,14 @@ class RegisterFrame(tk.Frame):
         container = tk.Frame(self)
         container.grid(row=0, column=0, sticky="nsew")
 
+        # Title Label
         tk.Label(
             container,
             text="Register New User",
             font=("Arial", 18, "bold"),
         ).pack(pady=30)
 
+        # Username and Password entries
         tk.Label(container, text="Username:").pack()
         self.username_entry = tk.Entry(container, bg="#f5f5f5", fg="black", insertbackground="black", width=25)
         self.username_entry.pack(pady=5)
@@ -32,6 +34,7 @@ class RegisterFrame(tk.Frame):
         self.password_entry = tk.Entry(container, show="*", bg="#f5f5f5", insertbackground="black", fg="black", width=25)
         self.password_entry.pack(pady=5)
 
+        # Register and Back buttons
         tk.Button(container, text="Register", command=self.register, width=15, bg="#f5f5f5").pack(pady=10)
         tk.Button(container, text="Back", command=self.go_back, width=15, bg="#f5f5f5").pack()
 

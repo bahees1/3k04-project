@@ -16,6 +16,7 @@ class Dashboard(tk.Frame):
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        # Set current mode and load existing patients
         self.patient_entries = {}
         self.param_entries = {}
         self.patient = None
@@ -39,10 +40,12 @@ class Dashboard(tk.Frame):
         header.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
         header.grid_columnconfigure(0, weight=1)
 
+        # Title Label
         tk.Label(
             header, text="Pacemaker DCM Dashboard", font=("Arial", 18, "bold")
         ).grid(row=0, column=0, sticky="w")
 
+        # Pacemaker Status Label
         self.pacemaker_status_label = tk.Label(
             header, text="Pacemaker Status: Disconnected", font=("Arial", 12), fg="red"
         )
@@ -80,7 +83,7 @@ class Dashboard(tk.Frame):
         tk.Label(selector_frame, text="Pacing Mode:").pack(side="left", padx=(15, 5))
         self.mode_dropdown = tk.OptionMenu(selector_frame, self.current_mode, "AOO", "VOO", "AAI", "VVI")
         self.mode_dropdown.pack(side="left")
-        self.current_mode.trace_add("write", lambda *args: self.update_mode_parameters())
+        self.current_mode.trace_add("write", lambda *args: self.update_mode_parameters()) # keeps watch of what mode is selected, calls the update param function when changes
 
         # Left Panel: Patient + Device Info
         patient_frame = tk.LabelFrame(main_content, text="Patient Info & Device")
@@ -113,6 +116,7 @@ class Dashboard(tk.Frame):
         for i, field in enumerate(param_helpers.PARAM_FIELDS):
             if field in ["Model", "Serial"]:
                 continue
+            
             gui_helpers.create_labeled_entry(
                 parent=param_frame,
                 label_text=field,
@@ -145,6 +149,8 @@ class Dashboard(tk.Frame):
 
     def load_selected_patient(self, name):
         patient = storage.load_patient_by_name(name)
+        
+        # If patient found, populate fields
         if patient:
             self.patient = patient
             patient_helpers.populate_patient_fields(self.patient_entries, patient)
@@ -184,8 +190,10 @@ class Dashboard(tk.Frame):
         for field_name, entry in self.param_entries.items():
             if field_name in ["Model", "Serial"]:
                 continue
+            
             if field_name in allowed_fields:
                 entry.config(state="normal", bg="#f8f8f8", fg="black")
+                
             else:
                 entry.config(state="disabled", disabledbackground="#b6b4b4", disabledforeground="gray")
 

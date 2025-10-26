@@ -1,4 +1,6 @@
 # PARAM HELPERS
+
+# place to define parameter fields and mappings
 PARAM_FIELDS = [
     "Model", "Serial",
     "Lower Rate Limit", "Upper Rate Limit",
@@ -10,6 +12,7 @@ PARAM_FIELDS = [
     "Rate Smoothing"
 ]
 
+# Mapping between internal parameter keys and UI field names
 PARAMETER_MAPPING = [
     ("lower_rate_limit", "Lower Rate Limit"),
     ("upper_rate_limit", "Upper Rate Limit"),

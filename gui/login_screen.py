@@ -7,13 +7,16 @@ from helper.storage import save_json
 # Helper functions - for registering a new user and validating an existing user
 # -----------------------------------------------------------------------------
 def register_user(users, username, password, data_path):
+    # Check max user limit
     if len(users) >= 10:
         return False, "Maximum of 10 users allowed."
 
+    # Check for duplicate usernames
     for u in users:
         if u["username"] == username:
             return False, "Sorry this username already exists."
 
+    # Add new user
     new_user = {"username": username, "password": password}
     users.append(new_user)
 
