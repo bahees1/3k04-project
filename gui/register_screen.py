@@ -25,11 +25,11 @@ class RegisterFrame(tk.Frame):
         ).pack(pady=30)
 
         tk.Label(container, text="Username:").pack()
-        self.username_entry = tk.Entry(container, bg="#f5f5f5", fg="black", width=25)
+        self.username_entry = tk.Entry(container, bg="#f5f5f5", fg="black", insertbackground="black", width=25)
         self.username_entry.pack(pady=5)
 
         tk.Label(container, text="Password:").pack()
-        self.password_entry = tk.Entry(container, show="*", bg="#f5f5f5", fg="black", width=25)
+        self.password_entry = tk.Entry(container, show="*", bg="#f5f5f5", insertbackground="black", fg="black", width=25)
         self.password_entry.pack(pady=5)
 
         tk.Button(container, text="Register", command=self.register, width=15, bg="#f5f5f5").pack(pady=10)

@@ -52,12 +52,12 @@ class LoginFrame(tk.Frame):
 
         # Username entry
         tk.Label(container, text="Username:").pack()
-        self.username_entry = tk.Entry(container, bg="#f5f5f5", fg="black", width=25)
+        self.username_entry = tk.Entry(container, bg="#f5f5f5", fg="black", insertbackground="black", width=25)
         self.username_entry.pack(pady=5)
 
         # Password entry
         tk.Label(container, text="Password:").pack()
-        self.password_entry = tk.Entry(container, show="*", bg="#f5f5f5", fg="black", width=25)
+        self.password_entry = tk.Entry(container, show="*", bg="#f5f5f5", fg="black", insertbackground="black", width=25)
         self.password_entry.pack(pady=5)
 
         # Login and Register buttons
