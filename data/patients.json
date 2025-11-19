@@ -1,17 +1,32 @@
 {
     "patients": [
         {
-            "id": "P001",
-            "name": "Asd",
+            "id": "P002",
+            "name": "John",
             "device": {
-                "model": "Asd",
-                "serial": "Asd",
-                "dcm_serial": "DCM-001",
+                "model": "Dr1",
+                "serial": "Abc123",
+                "dcm_serial": "DCM-002",
                 "modes": {
                     "AOO": {
                         "parameters": {
-                            "lower_rate_limit": "50",
-                            "upper_rate_limit": "100"
+                            "lower_rate_limit": "85",
+                            "upper_rate_limit": "110",
+                            "atrial_amplitude": "5",
+                            "atrial_pulse_width": "1.2"
+                        }
+                    },
+                    "AAI": {
+                        "parameters": {
+                            "lower_rate_limit": "100",
+                            "upper_rate_limit": "120",
+                            "atrial_amplitude": "0.55",
+                            "atrial_pulse_width": "1",
+                            "arp": "200",
+                            "atrial_sensitivity": "1",
+                            "pvarp": "200",
+                            "hysteresis": "Off",
+                            "rate_smoothing": "3"
                         }
                     }
                 }

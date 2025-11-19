@@ -13,6 +13,8 @@ from helper.storage import load_json
 from gui.login_screen import LoginFrame
 from gui.register_screen import RegisterFrame
 from gui.dashboard import Dashboard
+from gui.egram_screen import EgramScreen
+
 
 
 class DCMApp:
@@ -36,7 +38,7 @@ class DCMApp:
         # Initialize all GUI frames - for loop creates a new instance of each frame on startup
         # then places ontop of each other in the same spot using the grid function
         self.frames = {}
-        for FrameClass in (LoginFrame, RegisterFrame, Dashboard):
+        for FrameClass in (LoginFrame, RegisterFrame, Dashboard, EgramScreen):
             name = FrameClass.__name__.replace("Frame", "")
             frame = FrameClass(container, self)
             self.frames[name] = frame
