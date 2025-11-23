@@ -4,18 +4,22 @@
 PARAM_FIELDS = [
     "Model", "Serial",
     "Lower Rate Limit", "Upper Rate Limit",
+    "Maximum Sensor Rate",
     "Atrial Amplitude", "Ventricular Amplitude",
     "Atrial Pulse Width", "Ventricular Pulse Width",
     "ARP", "VRP",
     "Atrial Sensitivity", "Ventricular Sensitivity",
     "PVARP", "Hysteresis",
-    "Rate Smoothing"
+    "Rate Smoothing", "Activity Threshold",
+    "Reaction Time", "Response Factor",
+    "Recovery Time"
 ]
 
 # Mapping between internal parameter keys and UI field names
 PARAMETER_MAPPING = [
     ("lower_rate_limit", "Lower Rate Limit"),
     ("upper_rate_limit", "Upper Rate Limit"),
+    ("maximum_sensor_rate", "Maximum Sensor Rate"),
     ("atrial_amplitude", "Atrial Amplitude"),
     ("ventricular_amplitude", "Ventricular Amplitude"),
     ("atrial_pulse_width", "Atrial Pulse Width"),
@@ -26,7 +30,11 @@ PARAMETER_MAPPING = [
     ("ventricular_sensitivity", "Ventricular Sensitivity"),
     ("pvarp", "PVARP"),
     ("hysteresis", "Hysteresis"),
-    ("rate_smoothing", "Rate Smoothing")
+    ("rate_smoothing", "Rate Smoothing"),
+    ("activity_threshold", "Activity Threshold"),
+    ("reaction_time", "Reaction Time"),
+    ("response_factor", "Response Factor"),
+    ("recovery_time", "Recovery Time")
 ]
 
 # Define which parameters are editable for each pacing mode
@@ -63,7 +71,60 @@ MODE_PARAMETER_MAP = {
         "VRP",
         "Hysteresis",
         "Rate Smoothing"
-    ]
+    ],
+    "AOOR": [
+        "Lower Rate Limit",
+        "Upper Rate Limit",
+        "Maximum Sensor Rate",
+        "Atrial Amplitude",
+        "Atrial Pulse Width",
+        "Activity Threshold",
+        "Reaction Time",
+        "Response Factor",
+        "Recovery Time"
+    ],
+    "VOOR": [
+        "Lower Rate Limit",
+        "Upper Rate Limit",
+        "Maximum Sensor Rate",
+        "Ventricular Amplitude",
+        "Ventricular Pulse Width",
+        "Activity Threshold",
+        "Reaction Time",
+        "Response Factor",
+        "Recovery Time"
+    ],
+    "AAIR": [
+        "Lower Rate Limit",
+        "Upper Rate Limit",
+        "Maximum Sensor Rate",
+        "Atrial Amplitude",
+        "Atrial Sensitivity",
+        "ARP",
+        "PVARP",
+        "Hysteresis",
+        "Rate Smoothing",
+        "Atrial Pulse Width",
+        "Activity Threshold",
+        "Reaction Time",
+        "Response Factor",
+        "Recovery Time"
+    ],
+    "VVIR": [
+        "Lower Rate Limit",
+        "Upper Rate Limit",
+        "Maximum Sensor Rate",
+        "Ventricular Amplitude",
+        "Ventricular Pulse Width",
+        "Ventricular Sensitivity",
+        "VRP",
+        "Hysteresis",
+        "Rate Smoothing",
+        "Activity Threshold",
+        "Reaction Time",
+        "Response Factor",
+        "Recovery Time"
+    ],
 }
 
 

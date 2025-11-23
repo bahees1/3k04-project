@@ -8,7 +8,7 @@ from helper.storage import save_json
 # -----------------------------------------------------------------------------
 def register_user(users, username, password, data_path):
     # Check max user limit
-    if len(users) >= 10:
+    if len(users) >= 3:
         return False, "Maximum of 10 users allowed."
 
     # Check for duplicate usernames

@@ -81,10 +81,13 @@ class Dashboard(tk.Frame):
 
         # pacing mode dropdown 
         tk.Label(selector_frame, text="Pacing Mode:").pack(side="left", padx=(15, 5))
-        self.mode_dropdown = tk.OptionMenu(selector_frame, self.current_mode, "AOO", "VOO", "AAI", "VVI")
+        self.mode_dropdown = tk.OptionMenu(selector_frame, self.current_mode, "AOO", "VOO", "AAI", "VVI", "AOOR", "VOOR", "AAIR", "VVIR")
         self.mode_dropdown.pack(side="left")
         self.current_mode.trace_add("write", lambda *args: self.update_mode_parameters()) # keeps watch of what mode is selected, calls the update param function when changes
 
+        # button to switch to egram view
+        tk.Button(selector_frame, text="Egram View", command=lambda: self.controller.show_frame("EgramScreen")).pack(side="right", padx=10)
+        
         # Left Panel: Patient + Device Info
         patient_frame = tk.LabelFrame(main_content, text="Patient Info & Device")
         patient_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
@@ -193,7 +196,6 @@ class Dashboard(tk.Frame):
             
             if field_name in allowed_fields:
                 entry.config(state="normal", bg="#f8f8f8", fg="black")
-                
             else:
                 entry.config(state="disabled", disabledbackground="#b6b4b4", disabledforeground="gray")
 
