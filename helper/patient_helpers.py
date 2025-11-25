@@ -87,15 +87,21 @@ def validate_parameters(params):
 
     # Common parameter ranges
     for key, label, low, high, unit in [
-        ("atrial_amplitude", "Atrial Amplitude", 0.5, 7.0, "V"),
-        ("ventricular_amplitude", "Ventricular Amplitude", 0.5, 7.0, "V"),
-        ("atrial_pulse_width", "Atrial Pulse Width", 0.05, 1.9, "ms"),
-        ("ventricular_pulse_width", "Ventricular Pulse Width", 0.05, 1.9, "ms"),
-        ("atrial_sensitivity", "Atrial Sensitivity", 0.25, 10.0, "mV"),
-        ("ventricular_sensitivity", "Ventricular Sensitivity", 0.25, 10.0, "mV"),
+        ("maximum_sensor_rate", "Maximum Sensor Rate", 0, 5.0, "V"),
+        ("atrial_amplitude", "Atrial Amplitude", 0, 5.0, "V"),
+        ("ventricular_amplitude", "Ventricular Amplitude", 0, 5.0, "V"),
+        ("atrial_pulse_width", "Atrial Pulse Width", 1, 30, "ms"),
+        ("ventricular_pulse_width", "Ventricular Pulse Width", 1, 30, "ms"),
+        ("atrial_sensitivity", "Atrial Sensitivity", 0, 5.0, "mV"),
+        ("ventricular_sensitivity", "Ventricular Sensitivity", 0, 5.0, "mV"),
         ("arp", "ARP", 150, 500, "ms"),
         ("vrp", "VRP", 150, 500, "ms"),
         ("pvarp", "PVARP", 150, 500, "ms"),
+        ("reaction_time", "Reaction Time", 10, 50, "s"),
+        ("response_factor", "Response Factor", 1, 16, " "),
+        ("recovery_time", "Recovery Time", 2, 16, "min"),
+        
+        
     ]:
         # Check to see if value fits within range
         val = params.get(key)
@@ -107,6 +113,13 @@ def validate_parameters(params):
     
     if params.get("rate_smoothing") and params.get("rate_smoothing") not in smoothing_allowed:
         errors.append("Rate Smoothing must be one of: 0, 3, 6, 9, 12, 15, 18, 21, 25.")
+
+    # Activity Threshold
+    activity_allowed = {"V-Low", "Low", "Med-Low", "Med", "Med-High", "High", "V-High"}
+    
+    if params.get("activity_threshold") and params.get("activity_threshold") not in activity_allowed:
+        errors.append("Activity Threshold must be one of: V-Low, Low, Med-Low, Med, Med-High, High, V-High.")
+                        
 
     # Hysteresis
     hysteresis_val = params.get("hysteresis", "")
@@ -157,7 +170,11 @@ def save_patient_from_dashboard(dashboard):
     # Gather parameters from entries
     parameters = {}
     for key, field_name in param_helpers.PARAMETER_MAPPING:
-        value = dashboard.param_entries[field_name].get().strip()
+        if field_name == "Activity Threshold":
+            value = dashboard.activity_threshold_var.get().strip()
+        else:
+            value = dashboard.param_entries[field_name].get().strip()
+        
         if value:
             parameters[key] = value
 

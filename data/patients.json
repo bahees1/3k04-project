@@ -28,6 +28,38 @@
                             "hysteresis": "Off",
                             "rate_smoothing": "3"
                         }
+                    },
+                    "VOOR": {
+                        "parameters": {
+                            "lower_rate_limit": "40",
+                            "upper_rate_limit": "60",
+                            "activity_threshold": "High",
+                            "reaction_time": "20"
+                        }
+                    },
+                    "AOOR": {
+                        "parameters": {
+                            "lower_rate_limit": "45",
+                            "upper_rate_limit": "60",
+                            "activity_threshold": "V-Low"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": "P003",
+            "name": "Sam",
+            "device": {
+                "model": "Asd123",
+                "serial": "123123",
+                "dcm_serial": "DCM-002",
+                "modes": {
+                    "VOOR": {
+                        "parameters": {
+                            "lower_rate_limit": "45",
+                            "upper_rate_limit": "79"
+                        }
                     }
                 }
             }

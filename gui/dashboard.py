@@ -86,8 +86,11 @@ class Dashboard(tk.Frame):
         self.current_mode.trace_add("write", lambda *args: self.update_mode_parameters()) # keeps watch of what mode is selected, calls the update param function when changes
 
         # button to switch to egram view
-        tk.Button(selector_frame, text="Egram View", command=lambda: self.controller.show_frame("EgramScreen")).pack(side="right", padx=10)
-        
+        tk.Button(
+            selector_frame,
+            text="Egram View",
+            command=self.open_egram_view
+        ).pack(side="right", padx=10)
         # Left Panel: Patient + Device Info
         patient_frame = tk.LabelFrame(main_content, text="Patient Info & Device")
         patient_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
@@ -115,17 +118,36 @@ class Dashboard(tk.Frame):
         param_frame = tk.LabelFrame(main_content, text="Device Parameters")
         param_frame.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
 
-        # Pull parameter fields dynamically from param_helpers
         for i, field in enumerate(param_helpers.PARAM_FIELDS):
             if field in ["Model", "Serial"]:
                 continue
-            
+
+            # Special dropdown for Activity Threshold
+            if field == "Activity Threshold":
+                self.activity_threshold_var = tk.StringVar()
+
+                label = tk.Label(param_frame, text="Activity Threshold")
+                label.grid(row=i, column=0, padx=5, pady=5)
+
+                dropdown = tk.OptionMenu(
+                    param_frame,
+                    self.activity_threshold_var,
+                    "V-Low", "Low", "Med-Low", "Med", "Med-High", "High", "V-High"
+                )
+                dropdown.grid(row=i, column=1, padx=5, pady=5)
+
+                # Register in entries dict
+                self.param_entries["Activity Threshold"] = dropdown
+                continue
+
+            # All other parameters → normal labeled entry
             gui_helpers.create_labeled_entry(
                 parent=param_frame,
                 label_text=field,
                 row=i,
                 entry_dict=self.param_entries
             )
+
 
     # -----------------------------
     # Footer Section
@@ -176,16 +198,33 @@ class Dashboard(tk.Frame):
 
         # Fill parameter fields
         for key, field_name in param_helpers.PARAMETER_MAPPING:
+            if field_name == "Activity Threshold":
+                # Update OptionMenu via StringVar
+                if "Activity Threshold" in allowed_fields:
+                    self.activity_threshold_var.set(parameters.get(key, "V-Low"))
+                    self.param_entries["Activity Threshold"].config(
+                        state="normal", bg="white", fg="black"
+                    )
+                else:
+                    self.activity_threshold_var.set(parameters.get(key, ""))
+                    self.param_entries["Activity Threshold"].config(
+                        state="disabled", bg="#b6b4b4", fg="gray"
+                    )
+                continue  # skip normal Entry update
+
+            # Standard Entry fields
             entry = self.param_entries[field_name]
             entry.config(state="normal")
             entry.delete(0, "end")
             if key in parameters:
                 entry.insert(0, parameters[key])
 
-        # Fill device info
+        # Fill device model/serial
+        self.param_entries["Model"].config(state="normal")
         self.param_entries["Model"].delete(0, "end")
         self.param_entries["Model"].insert(0, device.get("model", ""))
 
+        self.param_entries["Serial"].config(state="normal")
         self.param_entries["Serial"].delete(0, "end")
         self.param_entries["Serial"].insert(0, device.get("serial", ""))
 
@@ -193,14 +232,16 @@ class Dashboard(tk.Frame):
         for field_name, entry in self.param_entries.items():
             if field_name in ["Model", "Serial"]:
                 continue
-            
+
+            if field_name == "Activity Threshold":
+                # Already handled above
+                continue
+
             if field_name in allowed_fields:
                 entry.config(state="normal", bg="#f8f8f8", fg="black")
             else:
                 entry.config(state="disabled", disabledbackground="#b6b4b4", disabledforeground="gray")
-
-
-
+                
     def clear_fields(self):
         patient_helpers.clear_fields(self)
 
@@ -209,6 +250,16 @@ class Dashboard(tk.Frame):
 
     def remove_patient(self):
         patient_helpers.remove_patient(self)
+        
+    def open_egram_view(self):
+        if not self.patient:
+            messagebox.showwarning("No Patient Selected", "Please select a patient before opening the Egram screen.")
+            return
+
+        screen = self.controller.frames["EgramScreen"]
+        screen.set_active_patient(self.patient)
+        self.controller.show_frame("EgramScreen")
+
 
     # -----------------------------
     # Clock & About Modals

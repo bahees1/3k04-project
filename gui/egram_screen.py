@@ -31,6 +31,8 @@ class EgramScreen(tk.Frame):
         self.plot = None
         self.canvas = None
         self.collecting = False
+        self.active_patient = None
+
 
         # UI layout
         self.configure(bg=self.DARK_BG)
@@ -78,8 +80,12 @@ class EgramScreen(tk.Frame):
         ).grid(row=0, column=0, sticky="w", padx=10)
 
         # Back button under title
+        # Back + Patient Name Frame
+        left_info = tk.Frame(header, bg=self.DARK_BG)
+        left_info.grid(row=1, column=0, sticky="w", padx=10, pady=(5, 0))
+
         back_btn = tk.Button(
-            header,
+            left_info,
             text="Back",
             width=10,
             bg=self.BTN_BG,
@@ -88,7 +94,18 @@ class EgramScreen(tk.Frame):
             activeforeground=self.BTN_ACTIVE_FG,
             command=self.go_back
         )
-        back_btn.grid(row=1, column=0, sticky="w", padx=10, pady=(5, 0))
+        back_btn.pack(side="left")
+
+        # Patient label (auto-updated when you load a patient)
+        self.patient_label = tk.Label(
+            left_info,
+            text="Patient: None",
+            bg=self.DARK_BG,
+            fg=self.FG_COLOR,
+            font=("Arial", 12, "bold")
+        )
+        self.patient_label.pack(side="left", padx=15)
+
 
         # Telemetry + Start/Stop buttons frame (right-aligned)
         right_frame = tk.Frame(header, bg=self.DARK_BG)
@@ -199,6 +216,11 @@ class EgramScreen(tk.Frame):
             selectcolor=self.DARK_BG
         ).grid(row=0, column=7, padx=(0, 0))  # last item, no extra padding
 
+    def set_active_patient(self, patient):
+        # Receive patient object from Dashboard and display name.
+        self.active_patient = patient
+        name = patient.get("name", "Unknown")
+        self.patient_label.config(text=f"Patient: {name}")
 
         
 
@@ -259,13 +281,20 @@ class EgramScreen(tk.Frame):
     # -------------------------------------------------------------------------
     def start_collection(self):
         if self.session is None:
-            patient_id = "TEST_PATIENT"
+            if not self.active_patient:
+                # fallback protection
+                patient_id = "UNKNOWN"
+            else:
+                patient_id = self.active_patient.get("id", "UNKNOWN")
+
             self.session = get_or_start_session(patient_id, {
+                "patient_name": self.active_patient.get("name", ""),
                 "egm_gain": self.egm_gain_var.get(),
                 "ecg_gain": self.ecg_gain_var.get(),
                 "high_pass_filter": self.hpf_var.get(),
                 "channels_selected": self.channel_var.get()
             })
+            
         self.collecting = True
         set_telemetry(self.session["session_id"], "connected")
         self.telemetry_label.config(text="Telemetry: Connected", fg="green")

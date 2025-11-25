@@ -3,10 +3,19 @@ import tkinter as tk
 from tkinter import messagebox
 
 # Helper functions to create labeled entries and buttons
-def create_labeled_entry(parent, label_text, row, entry_dict, read_only=False):
+def create_labeled_entry(parent, label_text, row, entry_dict, read_only=False, dropdown_values=None):
     # Create label and entry, store entry in the provided dictionary
     label = tk.Label(parent, text=label_text)
     label.grid(row=row, column=0, sticky="w", padx=5, pady=5)
+    
+    if dropdown_values:
+        # Create a dropdown (combobox)
+        var = tk.StringVar()
+        import tkinter.ttk as ttk
+        dropdown = ttk.Combobox(parent, textvariable=var, values=dropdown_values, state="readonly")
+        dropdown.grid(row=row, column=1, padx=5, pady=5)
+        entry_dict[label_text] = dropdown   # store combobox instead of entry
+        return dropdown
     
     entry = tk.Entry(parent, bg="#f8f8f8", fg="black", insertbackground="black")
     entry.grid(row=row, column=1, padx=5, pady=5)
