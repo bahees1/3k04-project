@@ -3,9 +3,41 @@ import tkinter as tk
 from tkinter import messagebox
 from datetime import datetime
 from helper import storage, patient_helpers, param_helpers, gui_helpers
+from helper.serial_comm import PacemakerSerial
 
 entry_bg = "#f8f8f8"
 entry_fg = "black"
+
+# Order of parameters in the data packet
+PACKET_ORDER = [
+    "Reserved0", "Reserved1", "Reserved2",
+    "mode",
+    "Lower Rate Limit",
+    "Upper Rate Limit",
+    "Maximum Sensor Rate",
+    "Atrial Amplitude",
+    "Ventricular Amplitude",
+    "Atrial Pulse Width",
+    "Ventricular Pulse Width",
+    "Atrial Sensitivity",
+    "Ventricular Sensitivity",
+    "VRP",
+    "ARP",
+    "Activity Threshold",
+    "Reaction Time",
+    "Response Factor",
+    "Recovery Time"
+]
+
+ACTIVITY_THRESHOLD_MAP = {
+    "V-Low": 0,
+    "Low": 1,
+    "Med-Low": 2,
+    "Med": 3,
+    "Med-High": 4,
+    "High": 5,
+    "V-High": 6
+}
 
 
 class Dashboard(tk.Frame):
@@ -161,9 +193,28 @@ class Dashboard(tk.Frame):
     # Visual indiciators for pacemaker connection
     # -----------------------------
     def connect_pacemaker(self):
-        self.pacemaker_status_label.config(text="Pacemaker Status: Connected", fg="green")
+        
+        # Initializes the serial connection to the pacemaker.
+        # Updates the pacemaker status label.
+        
+        if hasattr(self, "serial_link") and self.serial_link.ser and self.serial_link.ser.is_open:
+            print("Serial already connected.")
+            self.pacemaker_status_label.config(text="Pacemaker Status: Connected", fg="green")
+            return
 
+        self.serial_link = PacemakerSerial(port="/dev/tty.usbmodem1101", baud=115200)
+        success = self.serial_link.connect()
+        if success:
+            self.pacemaker_status_label.config(text="Pacemaker Status: Connected", fg="green")
+            print("Serial connection established successfully.")
+        else:
+            self.pacemaker_status_label.config(text="Pacemaker Status: Disconnected", fg="red")
+            print("Failed to connect to pacemaker.")
+            
     def disconnect_pacemaker(self):
+        if hasattr(self, "serial_link") and self.serial_link.ser:
+            self.serial_link.close()
+            print("Serial connection closed.")
         self.pacemaker_status_label.config(text="Pacemaker Status: Disconnected", fg="red")
 
     # -----------------------------
@@ -201,7 +252,7 @@ class Dashboard(tk.Frame):
             if field_name == "Activity Threshold":
                 # Update OptionMenu via StringVar
                 if "Activity Threshold" in allowed_fields:
-                    self.activity_threshold_var.set(parameters.get(key, "V-Low"))
+                    self.activity_threshold_var.set(parameters.get(key, "Med"))
                     self.param_entries["Activity Threshold"].config(
                         state="normal", bg="white", fg="black"
                     )
@@ -259,6 +310,51 @@ class Dashboard(tk.Frame):
         screen = self.controller.frames["EgramScreen"]
         screen.set_active_patient(self.patient)
         self.controller.show_frame("EgramScreen")
+        
+    def build_serial_packet(self):
+        """
+        Reads the current dashboard entries and builds an 18-byte packet
+        including 3 padding bytes for Simulink.
+        Returns: bytes object
+        """
+        packet_bytes = []
+
+        for key in PACKET_ORDER:
+            # 3 padding bytes
+            if key.startswith("Reserved"):
+                byte_val = 0
+            # Mode value (assuming self.mode_to_uint8() exists)
+            elif key == "mode":
+                byte_val = self.mode_to_uint8()
+            # Activity Threshold dropdown
+            elif key == "Activity Threshold":
+                at_val = self.activity_threshold_var.get()
+                byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 0)
+            # Standard entries
+            else:
+                entry = self.param_entries.get(key)
+                if entry:
+                    try:
+                        val = float(entry.get())
+                        # convert amplitude to 0–255 scale if needed
+                        if "Amplitude" in key or "Sensitivity" in key:
+                            val = int(val * 10)
+                        else:
+                            val = int(val)
+                        byte_val = val & 0xFF
+                    except:
+                        byte_val = 0
+                else:
+                    byte_val = 0
+
+            packet_bytes.append(byte_val)
+
+        # Make sure packet is exactly 18 bytes
+        packet_bytes = packet_bytes[:18]
+
+        import struct
+        return struct.pack(f"{len(packet_bytes)}B", *packet_bytes)
+
 
 
     # -----------------------------

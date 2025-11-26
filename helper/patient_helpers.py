@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 from helper import storage, param_helpers
+from helper.serial_comm import PacemakerSerial
 
 # function used to generate a unique patient ID
 def generate_unique_patient_id(dashboard):
@@ -147,20 +148,17 @@ def save_patient_from_dashboard(dashboard):
     serial = dashboard.param_entries["Serial"].get().strip().capitalize()
     mode = dashboard.current_mode.get()
 
-    # User should input atleast patient name, device model and serial before saving
     if not patient_name or not model or not serial:
         messagebox.showwarning("Missing Fields", "Patient Name, Model, and Serial are required.")
         return
 
     existing_patients = storage.load_all_patients()
     existing_dcm_serials = []
-    
-    # Gather existing DCM serials to ensure uniqueness
+
     for p in existing_patients:
         if "device" in p and "dcm_serial" in p["device"]:
             existing_dcm_serials.append(p["device"]["dcm_serial"])
 
-    # Generate unique DCM serial if new patient
     if dashboard.patient and "device" in dashboard.patient and "dcm_serial" in dashboard.patient["device"]:
         dcm_serial = dashboard.patient["device"]["dcm_serial"]
     else:
@@ -174,17 +172,12 @@ def save_patient_from_dashboard(dashboard):
             value = dashboard.activity_threshold_var.get().strip()
         else:
             value = dashboard.param_entries[field_name].get().strip()
-        
         if value:
             parameters[key] = value
 
-    # -----------------------------
-    # Validate parameters before saving
-    # -----------------------------
-    if not validate_parameters(parameters):
+    if not param_helpers.validate_parameters(parameters):
         return
 
-    # Build modes dictionary
     modes = {}
     if dashboard.patient and "device" in dashboard.patient:
         modes = dashboard.patient["device"].get("modes", {})
@@ -202,13 +195,25 @@ def save_patient_from_dashboard(dashboard):
         }
     }
 
-    # Save patient data to storage
+    # Save patient data
     storage.save_patient_to_file(new_patient)
     dashboard.patients = storage.load_all_patients()
     dashboard.patient = new_patient
     dashboard.refresh_patient_dropdown()
     dashboard.patient_var.set(patient_name)
     messagebox.showinfo("Saved", f"Patient {patient_id} saved successfully!")
+
+    # -----------------------------
+    # SEND 18-BYTE PACKET AUTOMATICALLY
+    # -----------------------------
+    
+    if hasattr(dashboard, "serial_link") and dashboard.serial_link.ser and dashboard.serial_link.ser.is_open:
+        packet = dashboard.build_serial_packet()
+        dashboard.serial_link.ser.write(packet)
+        print("Pacemaker packet sent:", list(packet))
+    else:
+        print("Serial not connected — packet not sent.")
+
 
 
 def remove_patient(dashboard):
