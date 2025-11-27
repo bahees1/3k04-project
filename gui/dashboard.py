@@ -31,13 +31,13 @@ PACKET_ORDER = [
 ]
 
 ACTIVITY_THRESHOLD_MAP = {
-    "V-Low": 0,
-    "Low": 1,
-    "Med-Low": 2,
-    "Med": 3,
-    "Med-High": 4,
-    "High": 5,
-    "V-High": 6
+    "V-Low": 1,
+    "Low": 2,
+    "Med-Low": 3,
+    "Med": 4,
+    "Med-High": 5,
+    "High": 6,
+    "V-High": 7
 }
 
 
@@ -353,7 +353,7 @@ class Dashboard(tk.Frame):
             # Activity threshold dropdown
             elif key == "Activity Threshold":
                 at_val = self.activity_threshold_var.get()
-                byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 0)
+                byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 1)
                 print(f"  -> Activity Threshold '{at_val}' -> byte {byte_val}")
 
             # Standard parameter entries
