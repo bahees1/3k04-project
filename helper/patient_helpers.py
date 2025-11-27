@@ -1,3 +1,4 @@
+# Patient Helper
 import tkinter as tk
 from tkinter import messagebox
 from helper import storage, param_helpers
@@ -175,7 +176,7 @@ def save_patient_from_dashboard(dashboard):
         if value:
             parameters[key] = value
 
-    if not param_helpers.validate_parameters(parameters):
+    if not validate_parameters(parameters):
         return
 
     modes = {}
@@ -203,16 +204,50 @@ def save_patient_from_dashboard(dashboard):
     dashboard.patient_var.set(patient_name)
     messagebox.showinfo("Saved", f"Patient {patient_id} saved successfully!")
 
-    # -----------------------------
-    # SEND 18-BYTE PACKET AUTOMATICALLY
-    # -----------------------------
     
-    if hasattr(dashboard, "serial_link") and dashboard.serial_link.ser and dashboard.serial_link.ser.is_open:
-        packet = dashboard.build_serial_packet()
-        dashboard.serial_link.ser.write(packet)
-        print("Pacemaker packet sent:", list(packet))
+    # -----------------------------
+    # SEND 18-BYTE PACKET AUTOMATICALLY (WITH DEBUGGING)
+    # -----------------------------
+
+    print("\n--- SAVE PATIENT DEBUG ---")
+
+    # 1. Check serial_link exists
+    if not hasattr(dashboard, "serial_link"):
+        print("[DEBUG] dashboard.serial_link does NOT exist.")
+        print("Packet NOT sent.")
+        return
+
+    # 2. Check serial object exists
+    if dashboard.serial_link.ser is None:
+        print("[DEBUG] serial_link.ser is None — connect_pacemaker was never called.")
+        return
     else:
-        print("Serial not connected — packet not sent.")
+        print("[DEBUG] serial_link.ser exists.")
+
+    # 3. Check port open
+    if not dashboard.serial_link.ser.is_open:
+        print("[DEBUG] serial port exists but is NOT OPEN.")
+        return
+    else:
+        print(f"[DEBUG] Serial port {dashboard.serial_link.port} is OPEN.")
+
+    # 4. Build packet
+    packet = dashboard.build_serial_packet()
+    packet_list = list(packet)
+    print(f"[DEBUG] Built packet ({len(packet_list)} bytes): {packet_list}")
+
+    # 5. Try sending packet
+    try:
+        bytes_written = dashboard.serial_link.ser.write(packet)
+        dashboard.serial_link.ser.flush()
+        print(f"[DEBUG] Bytes actually written: {bytes_written}")
+    except Exception as e:
+        print("[ERROR] Failed to write packet over serial:", e)
+        return
+
+    print("[DEBUG] Packet successfully sent to pacemaker.")
+    print("--- END DEBUG ---\n")
+
 
 
 
