@@ -332,7 +332,7 @@ class Dashboard(tk.Frame):
     
     def build_serial_packet(self):
         print("\n====================")
-        print("BUILDING SERIAL PACKET (MODE-AWARE, SCALED)")
+        print("BUILDING SERIAL PACKET (MODE-AWARE, SCALED, PVARP=0)")
         print("====================")
 
         packet_bytes = []
@@ -358,6 +358,11 @@ class Dashboard(tk.Frame):
                 byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 0)
                 print(f"Reading field: Activity Threshold '{at_val}' -> byte {byte_val}")
 
+            # PVARP always sent as 0
+            elif key == "PVARP":
+                byte_val = 0
+                print(f"Reading field: PVARP -> forced 0")
+
             # Skip parameters not allowed for this mode
             elif key not in allowed_fields:
                 byte_val = 0
@@ -378,7 +383,7 @@ class Dashboard(tk.Frame):
                                 "Atrial Sensitivity", "Ventricular Sensitivity"]:
                             send_val = int(val * 10)
                             print(f"  -> Scaling x10: {val} -> {send_val}")
-                        elif key in ["VRP", "ARP", "PVARP"]:
+                        elif key in ["VRP", "ARP"]:
                             send_val = int(val / 10)
                             print(f"  -> Scaling /10: {val} -> {send_val}")
                         else:
@@ -405,6 +410,7 @@ class Dashboard(tk.Frame):
         print("====================\n")
 
         return struct.pack(f"{len(packet_bytes)}B", *packet_bytes)
+
 
 
 
