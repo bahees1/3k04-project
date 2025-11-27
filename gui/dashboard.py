@@ -337,6 +337,10 @@ class Dashboard(tk.Frame):
 
         packet_bytes = []
 
+        # Get allowed parameters for the current mode
+        current_mode = self.current_mode.get()
+        allowed_fields = param_helpers.MODE_PARAMETER_MAP.get(current_mode, [])
+
         for key in PACKET_ORDER:
             print(f"\nReading field: {key}")
 
@@ -348,45 +352,51 @@ class Dashboard(tk.Frame):
             # Mode byte
             elif key == "mode":
                 byte_val = self.mode_to_uint8()
-                print(f"  -> Mode = {self.current_mode.get()} -> byte {byte_val}")
+                print(f"  -> Mode = {current_mode} -> byte {byte_val}")
 
-            # Activity threshold dropdown
+            # Activity Threshold dropdown
             elif key == "Activity Threshold":
-                at_val = self.activity_threshold_var.get()
-                byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 1)
-                print(f"  -> Activity Threshold '{at_val}' -> byte {byte_val}")
+                if "Activity Threshold" in allowed_fields:
+                    at_val = self.activity_threshold_var.get()
+                    byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 0)
+                    print(f"  -> Activity Threshold '{at_val}' -> byte {byte_val}")
+                else:
+                    byte_val = 0
+                    print(f"  -> Activity Threshold disabled for {current_mode}, using 0")
 
             # Standard parameter entries
             else:
-                entry = self.param_entries.get(key)
-                if entry:
-                    raw_val = entry.get()
-                    print(f"  -> Raw UI value: '{raw_val}'")
-
-                    try:
-                        val = float(raw_val)
-
-                        if "Amplitude" in key or "Sensitivity" in key:
-                            send_val = int(val * 10)
-                            print(f"    Interpreted as amplitude/sensitivity: {val} -> scaled {send_val}")
-                        else:
-                            send_val = int(val)
-                            print(f"    Interpreted as integer param: {send_val}")
-
-                        byte_val = send_val & 0xFF
-                        print(f"    Final byte: {byte_val} (0x{byte_val:02X})")
-
-                    except Exception as e:
-                        print(f"    ERROR converting value '{raw_val}': {e}")
+                # Only include parameters allowed for this mode
+                field_name = next((f for k, f in param_helpers.PARAMETER_MAPPING if k == key), None)
+                if field_name and field_name in allowed_fields:
+                    entry = self.param_entries.get(field_name)
+                    if entry:
+                        raw_val = entry.get()
+                        print(f"  -> Raw UI value: '{raw_val}'")
+                        try:
+                            val = float(raw_val)
+                            # Scale amplitude/sensitivity
+                            if "Amplitude" in key or "Sensitivity" in key:
+                                send_val = int(val * 10)
+                            else:
+                                send_val = int(val)
+                            byte_val = send_val & 0xFF
+                            print(f"    Final byte: {byte_val} (0x{byte_val:02X})")
+                        except Exception as e:
+                            print(f"    ERROR converting value '{raw_val}': {e}")
+                            byte_val = 0
+                            print(f"    -> Defaulting byte to 0")
+                    else:
                         byte_val = 0
-                        print(f"    -> Defaulting byte to 0")
+                        print(f"  -> Entry missing, using 0")
                 else:
-                    print("  -> No entry found, defaulting 0")
+                    # Not allowed for this mode → default 0
                     byte_val = 0
+                    print(f"  -> Field '{key}' not in allowed parameters for {current_mode}, using 0")
 
             packet_bytes.append(byte_val)
 
-        # Ensure packet length is 18 bytes
+        # Ensure packet length is exactly 18 bytes
         packet_bytes = packet_bytes[:18]
 
         print("\nFINAL PACKET (DECIMAL):")
@@ -395,6 +405,7 @@ class Dashboard(tk.Frame):
         print("====================\n")
 
         return struct.pack(f"{len(packet_bytes)}B", *packet_bytes)
+
 
 
 
