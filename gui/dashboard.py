@@ -328,7 +328,7 @@ class Dashboard(tk.Frame):
         }
 
         mode_str = self.current_mode.get()
-        return mode_map.get(mode_str, 0)
+        return mode_map.get(mode_str, 1)
     
     def build_serial_packet(self):
         print("\n====================")
