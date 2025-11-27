@@ -2,7 +2,7 @@ import serial
 import struct
 
 class PacemakerSerial:
-    def __init__(self, port="/dev/ttyUSB0", baud=115200):
+    def __init__(self, port="COM7", baud=115200):
         self.port = port
         self.baud = baud
         self.ser = None
@@ -60,7 +60,7 @@ class PacemakerSerial:
         # Only send the first 18 bytes
         packet_bytes = packet_bytes[:18]
 
-        import struct
+        
         packet = struct.pack(f"{len(packet_bytes)}B", *packet_bytes)
         if self.ser:
             self.ser.write(packet)

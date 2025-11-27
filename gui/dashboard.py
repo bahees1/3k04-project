@@ -4,6 +4,7 @@ from tkinter import messagebox
 from datetime import datetime
 from helper import storage, patient_helpers, param_helpers, gui_helpers
 from helper.serial_comm import PacemakerSerial
+import struct
 
 entry_bg = "#f8f8f8"
 entry_fg = "black"
@@ -202,7 +203,7 @@ class Dashboard(tk.Frame):
             self.pacemaker_status_label.config(text="Pacemaker Status: Connected", fg="green")
             return
 
-        self.serial_link = PacemakerSerial(port="/dev/tty.usbmodem1101", baud=115200)
+        self.serial_link = PacemakerSerial(port="COM7", baud=115200)
         success = self.serial_link.connect()
         if success:
             self.pacemaker_status_label.config(text="Pacemaker Status: Connected", fg="green")
@@ -310,13 +311,29 @@ class Dashboard(tk.Frame):
         screen = self.controller.frames["EgramScreen"]
         screen.set_active_patient(self.patient)
         self.controller.show_frame("EgramScreen")
-        
+    
+    def mode_to_uint8(self):
+    
+        # Converts selected mode string into its corresponding mode byte.
+        # AOO=1, VOO=2, AAI=3, VVI=4, AOOR=5, VOOR=6, AAIR=7, VVIR=8.
+        mode_map = {
+            "AOO": 1,
+            "VOO": 2,
+            "AAI": 3,
+            "VVI": 4,
+            "AOOR": 5,
+            "VOOR": 6,
+            "AAIR": 7,
+            "VVIR": 8
+        }
+
+        mode_str = self.current_mode.get()
+        return mode_map.get(mode_str, 0)
+    
     def build_serial_packet(self):
-        """
-        Reads the current dashboard entries and builds an 18-byte packet
-        including 3 padding bytes for Simulink.
-        Returns: bytes object
-        """
+        
+        # Reads the current dashboard entries and builds an 18-byte packet
+        
         packet_bytes = []
 
         for key in PACKET_ORDER:
@@ -351,8 +368,6 @@ class Dashboard(tk.Frame):
 
         # Make sure packet is exactly 18 bytes
         packet_bytes = packet_bytes[:18]
-
-        import struct
         return struct.pack(f"{len(packet_bytes)}B", *packet_bytes)
 
 
