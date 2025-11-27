@@ -89,13 +89,13 @@ def validate_parameters(params):
 
     # Common parameter ranges
     for key, label, low, high, unit in [
-        ("maximum_sensor_rate", "Maximum Sensor Rate", 0, 5.0, "V"),
-        ("atrial_amplitude", "Atrial Amplitude", 0, 5.0, "V"),
-        ("ventricular_amplitude", "Ventricular Amplitude", 0, 5.0, "V"),
+        ("maximum_sensor_rate", "Maximum Sensor Rate", 50, 175, "ppm"),
+        ("atrial_amplitude", "Atrial Amplitude", 0, 5.0, "V"), # x10
+        ("ventricular_amplitude", "Ventricular Amplitude", 0, 5.0, "V"), # x10
         ("atrial_pulse_width", "Atrial Pulse Width", 1, 30, "ms"),
         ("ventricular_pulse_width", "Ventricular Pulse Width", 1, 30, "ms"),
-        ("atrial_sensitivity", "Atrial Sensitivity", 0, 5.0, "mV"),
-        ("ventricular_sensitivity", "Ventricular Sensitivity", 0, 5.0, "mV"),
+        ("atrial_sensitivity", "Atrial Sensitivity", 0, 5.0, "mV"), # x10
+        ("ventricular_sensitivity", "Ventricular Sensitivity", 0, 5.0, "mV"), # x10
         ("arp", "ARP", 150, 500, "ms"),
         ("vrp", "VRP", 150, 500, "ms"),
         ("pvarp", "PVARP", 150, 500, "ms"),

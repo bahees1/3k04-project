@@ -332,67 +332,68 @@ class Dashboard(tk.Frame):
     
     def build_serial_packet(self):
         print("\n====================")
-        print("BUILDING SERIAL PACKET")
+        print("BUILDING SERIAL PACKET (MODE-AWARE, SCALED)")
         print("====================")
 
         packet_bytes = []
-
-        # Get allowed parameters for the current mode
-        current_mode = self.current_mode.get()
-        allowed_fields = param_helpers.MODE_PARAMETER_MAP.get(current_mode, [])
+        mode = self.current_mode.get()
+        allowed_fields = param_helpers.MODE_PARAMETER_MAP.get(mode, [])
 
         for key in PACKET_ORDER:
-            print(f"\nReading field: {key}")
+            byte_val = 0  # default
 
             # Reserved bytes
             if key.startswith("Reserved"):
                 byte_val = 0
-                print(f"  -> Reserved field, using 0")
+                print(f"Reading field: {key} -> Reserved, using 0")
 
             # Mode byte
             elif key == "mode":
                 byte_val = self.mode_to_uint8()
-                print(f"  -> Mode = {current_mode} -> byte {byte_val}")
+                print(f"Reading field: mode -> {mode} -> byte {byte_val}")
 
             # Activity Threshold dropdown
             elif key == "Activity Threshold":
-                if "Activity Threshold" in allowed_fields:
-                    at_val = self.activity_threshold_var.get()
-                    byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 0)
-                    print(f"  -> Activity Threshold '{at_val}' -> byte {byte_val}")
-                else:
-                    byte_val = 0
-                    print(f"  -> Activity Threshold disabled for {current_mode}, using 0")
+                at_val = self.activity_threshold_var.get()
+                byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 0)
+                print(f"Reading field: Activity Threshold '{at_val}' -> byte {byte_val}")
 
-            # Standard parameter entries
+            # Skip parameters not allowed for this mode
+            elif key not in allowed_fields:
+                byte_val = 0
+                print(f"Reading field: {key} -> not allowed for mode {mode}, defaulting 0")
+
+            # Allowed parameters: scale if needed
             else:
-                # Only include parameters allowed for this mode
-                field_name = next((f for k, f in param_helpers.PARAMETER_MAPPING if k == key), None)
-                if field_name and field_name in allowed_fields:
-                    entry = self.param_entries.get(field_name)
-                    if entry:
-                        raw_val = entry.get()
-                        print(f"  -> Raw UI value: '{raw_val}'")
-                        try:
-                            val = float(raw_val)
-                            # Scale amplitude/sensitivity
-                            if "Amplitude" in key or "Sensitivity" in key:
-                                send_val = int(val * 10)
-                            else:
-                                send_val = int(val)
-                            byte_val = send_val & 0xFF
-                            print(f"    Final byte: {byte_val} (0x{byte_val:02X})")
-                        except Exception as e:
-                            print(f"    ERROR converting value '{raw_val}': {e}")
-                            byte_val = 0
-                            print(f"    -> Defaulting byte to 0")
-                    else:
+                entry = self.param_entries.get(key)
+                if entry:
+                    raw_val = entry.get()
+                    print(f"Reading field: {key} -> raw UI value: '{raw_val}'")
+
+                    try:
+                        val = float(raw_val)
+
+                        # Scaling rules
+                        if key in ["Atrial Amplitude", "Ventricular Amplitude",
+                                "Atrial Sensitivity", "Ventricular Sensitivity"]:
+                            send_val = int(val * 10)
+                            print(f"  -> Scaling x10: {val} -> {send_val}")
+                        elif key in ["VRP", "ARP", "PVARP"]:
+                            send_val = int(val / 10)
+                            print(f"  -> Scaling /10: {val} -> {send_val}")
+                        else:
+                            send_val = int(val)
+                            print(f"  -> Raw integer param: {send_val}")
+
+                        # Clamp to 0–255
+                        byte_val = max(0, min(send_val, 255))
+                        print(f"  -> Final byte: {byte_val} (0x{byte_val:02X})")
+
+                    except Exception as e:
+                        print(f"  -> ERROR converting '{raw_val}': {e}, defaulting 0")
                         byte_val = 0
-                        print(f"  -> Entry missing, using 0")
                 else:
-                    # Not allowed for this mode → default 0
-                    byte_val = 0
-                    print(f"  -> Field '{key}' not in allowed parameters for {current_mode}, using 0")
+                    print(f"  -> Entry not found for {key}, defaulting 0")
 
             packet_bytes.append(byte_val)
 
@@ -401,12 +402,9 @@ class Dashboard(tk.Frame):
 
         print("\nFINAL PACKET (DECIMAL):")
         print(packet_bytes)
-
         print("====================\n")
 
         return struct.pack(f"{len(packet_bytes)}B", *packet_bytes)
-
-
 
 
 
