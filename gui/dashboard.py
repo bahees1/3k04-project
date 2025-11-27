@@ -331,44 +331,71 @@ class Dashboard(tk.Frame):
         return mode_map.get(mode_str, 0)
     
     def build_serial_packet(self):
-        
-        # Reads the current dashboard entries and builds an 18-byte packet
-        
+        print("\n====================")
+        print("BUILDING SERIAL PACKET")
+        print("====================")
+
         packet_bytes = []
 
         for key in PACKET_ORDER:
-            # 3 padding bytes
+            print(f"\nReading field: {key}")
+
+            # Reserved bytes
             if key.startswith("Reserved"):
                 byte_val = 0
-            # Mode value (assuming self.mode_to_uint8() exists)
+                print(f"  -> Reserved field, using 0")
+
+            # Mode byte
             elif key == "mode":
                 byte_val = self.mode_to_uint8()
-            # Activity Threshold dropdown
+                print(f"  -> Mode = {self.current_mode.get()} -> byte {byte_val}")
+
+            # Activity threshold dropdown
             elif key == "Activity Threshold":
                 at_val = self.activity_threshold_var.get()
                 byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 0)
-            # Standard entries
+                print(f"  -> Activity Threshold '{at_val}' -> byte {byte_val}")
+
+            # Standard parameter entries
             else:
                 entry = self.param_entries.get(key)
                 if entry:
+                    raw_val = entry.get()
+                    print(f"  -> Raw UI value: '{raw_val}'")
+
                     try:
-                        val = float(entry.get())
-                        # convert amplitude to 0–255 scale if needed
+                        val = float(raw_val)
+
                         if "Amplitude" in key or "Sensitivity" in key:
-                            val = int(val * 10)
+                            send_val = int(val * 10)
+                            print(f"    Interpreted as amplitude/sensitivity: {val} -> scaled {send_val}")
                         else:
-                            val = int(val)
-                        byte_val = val & 0xFF
-                    except:
+                            send_val = int(val)
+                            print(f"    Interpreted as integer param: {send_val}")
+
+                        byte_val = send_val & 0xFF
+                        print(f"    Final byte: {byte_val} (0x{byte_val:02X})")
+
+                    except Exception as e:
+                        print(f"    ERROR converting value '{raw_val}': {e}")
                         byte_val = 0
+                        print(f"    -> Defaulting byte to 0")
                 else:
+                    print("  -> No entry found, defaulting 0")
                     byte_val = 0
 
             packet_bytes.append(byte_val)
 
-        # Make sure packet is exactly 18 bytes
+        # Ensure packet length is 18 bytes
         packet_bytes = packet_bytes[:18]
+
+        print("\nFINAL PACKET (DECIMAL):")
+        print(packet_bytes)
+
+        print("====================\n")
+
         return struct.pack(f"{len(packet_bytes)}B", *packet_bytes)
+
 
 
 
