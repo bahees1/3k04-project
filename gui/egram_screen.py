@@ -14,8 +14,43 @@ from egram.egram_storage import (
     add_marker,
     set_telemetry
 )
+from egram.egram_utils import read_egram_packets
+import threading
 
+# ==============================================
+#  PARSE TELEMETRY PACKET (20 bytes from MCU)
+# ==============================================
+def parse_egram_packet(packet_bytes):
+    """
+    Parse a 20-byte EGRAM telemetry packet.
+    Format:
+        [0] = 0xAA
+        [1] = 0x22
+        [18] = ventricular sample (int8)
+        [19] = atrial sample (int8)
+    """
+    if len(packet_bytes) != 20:
+        return None
 
+    if packet_bytes[0] != 0xAA:
+        return None
+
+    if packet_bytes[1] != 0x22:
+        return None
+
+    # Extract signed waveform samples
+    vent_raw = int.from_bytes(packet_bytes[18:19], byteorder="big", signed=True)
+    atr_raw  = int.from_bytes(packet_bytes[19:20], byteorder="big", signed=True)
+
+    # Convert raw int8 → millivolts
+    vent_mV = vent_raw / 10.0
+    atr_mV  = atr_raw / 10.0
+
+    return {
+        "atrial": [{"t": 0, "value": atr_mV}],
+        "ventricular": [{"t": 0, "value": vent_mV}],
+        "markers": []
+    }
 class EgramScreen(tk.Frame):
     DARK_BG = "#1e1e1e"
     FG_COLOR = "#ffffff"
@@ -296,9 +331,22 @@ class EgramScreen(tk.Frame):
             })
             
         self.collecting = True
-        set_telemetry(self.session["session_id"], "connected")
-        self.telemetry_label.config(text="Telemetry: Connected", fg="green")
-        self.update_plot_loop()
+
+        # Start serial background reading thread
+        def running_flag():
+            return self.collecting
+
+        def on_packet(packet_bytes):
+            payload = parse_egram_packet(packet_bytes)
+            if payload:
+                self.handle_incoming_data(payload)
+
+        # Start thread
+        threading.Thread(
+            target=read_egram_packets,
+            args=(self.controller.serial, running_flag, 20, on_packet),
+            daemon=True
+        ).start()
 
     def stop_collection(self):
         self.collecting = False

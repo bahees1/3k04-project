@@ -2,7 +2,7 @@
 # EGRAM UTILITY FUNCTIONS
 # helper functions for gains, trimming, markers, and sample formatting
 # -----------------------------------------------------------------------------
-
+import time
 
 # -----------------------------------------------------------------------------
 # gain helpers
@@ -128,3 +128,27 @@ def append_and_trim(existing, new_samples, window_ms):
     # trim after combining
     combined = trim_window(combined, window_ms)
     return combined
+
+def read_egram_packets(serial_port, running_flag, packet_size, on_packet):
+
+    buffer = bytearray()
+
+    while running_flag():
+        if serial_port.in_waiting:
+            buffer += serial_port.read(serial_port.in_waiting)
+
+            # Keep extracting packets
+            while len(buffer) >= packet_size:
+                # Look for header 0xA0
+                if not (buffer[0] == 0xAA and buffer[1] == 0x22):
+                    buffer.pop(0)
+                    continue
+
+                # Extract and consume the packet
+                packet = buffer[:packet_size]
+                buffer = buffer[packet_size:]
+
+                # Hand packet back to UI
+                on_packet(packet)
+
+        time.sleep(0.001)
