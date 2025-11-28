@@ -15,7 +15,9 @@ from egram.egram_storage import (
     set_telemetry
 )
 from egram.egram_utils import read_egram_packets
+from helper.serial_comm import PacemakerSerial
 import threading
+import time
 
 # ==============================================
 #  PARSE TELEMETRY PACKET (20 bytes from MCU)
@@ -315,9 +317,20 @@ class EgramScreen(tk.Frame):
     # Start / Stop collection
     # -------------------------------------------------------------------------
     def start_collection(self):
+        # Ensure serial is connected only when telemetry starts
+        ser = getattr(self.controller, "serial", None)
+        if ser is None:
+            self.controller.serial = PacemakerSerial(port="COM7", baud=115200)
+            ser = self.controller.serial
+
+        if not ser.connect():
+            print("Warning: Could not connect to pacemaker. Telemetry will not start.")
+            self.collecting = False
+            return
+
+        # Initialize session if needed
         if self.session is None:
             if not self.active_patient:
-                # fallback protection
                 patient_id = "UNKNOWN"
             else:
                 patient_id = self.active_patient.get("id", "UNKNOWN")
@@ -329,24 +342,61 @@ class EgramScreen(tk.Frame):
                 "high_pass_filter": self.hpf_var.get(),
                 "channels_selected": self.channel_var.get()
             })
-            
+
         self.collecting = True
+        self.telemetry_label.config(text="Telemetry: Connected", fg="green")
 
-        # Start serial background reading thread
-        def running_flag():
-            return self.collecting
+        # -----------------------------
+        # Unified read loop
+        # -----------------------------
+        def read_loop():
+            buffer = bytearray()
+            while self.collecting:
+                try:
+                    if not ser or not ser.ser or not ser.ser.is_open:
+                        time.sleep(0.01)
+                        continue
 
-        def on_packet(packet_bytes):
-            payload = parse_egram_packet(packet_bytes)
-            if payload:
-                self.handle_incoming_data(payload)
+                    # Read all available bytes
+                    in_waiting = ser.ser.in_waiting
+                    if in_waiting:
+                        buffer += ser.ser.read(in_waiting)
 
-        # Start thread
-        threading.Thread(
-            target=read_egram_packets,
-            args=(self.controller.serial, running_flag, 20, on_packet),
-            daemon=True
-        ).start()
+                        # Extract full 20-byte packets
+                        while len(buffer) >= 20:
+                            # Check header
+                            if not (buffer[0] == 0xAA and buffer[1] == 0x22):
+                                buffer.pop(0)
+                                continue
+
+                            packet = buffer[:20]
+                            buffer = buffer[20:]
+
+                            # --- Parse packet and update plots ---
+                            payload = parse_egram_packet(packet)
+                            if payload:
+                                self.handle_incoming_data(payload)
+
+                            # --- Telemetry 19th/20th byte ---
+                            byte19, byte20 = packet[18], packet[19]
+                            telemetry_value = (byte19 << 8) | byte20
+
+                            mode = self.channel_var.get().lower()
+                            if mode in ["atrial", "both"]:
+                                self.update_egm_plot('atrial', telemetry_value)
+                            if mode in ["ventricular", "both"]:
+                                self.update_egm_plot('ventricular', telemetry_value)
+
+                    else:
+                        time.sleep(0.01)
+
+                except Exception as e:
+                    print("[EGRAM ERROR] read_loop:", e)
+                    time.sleep(0.05)
+
+        threading.Thread(target=read_loop, daemon=True).start()
+ 
+        
 
     def stop_collection(self):
         self.collecting = False
@@ -398,3 +448,5 @@ class EgramScreen(tk.Frame):
                 add_marker(self.session["session_id"], m)
 
         self.canvas.draw()
+
+    

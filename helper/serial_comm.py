@@ -68,3 +68,27 @@ class PacemakerSerial:
             print("[ERROR] Failed to send packet:", e)
 
         print("=== END SEND PACKET ===\n")
+
+    def read_telemetry_bytes(self):
+        """
+        Reads the 19th and 20th bytes from the pacemaker serial.
+        Returns a tuple (byte19, byte20) or None if not enough data.
+        This is independent of send_packet().
+        """
+        if not self.ser or not self.ser.is_open:
+            print("ERROR: Serial not connected. Cannot read telemetry.\n")
+            return None
+
+        try:
+            # Check if enough bytes are available
+            if self.ser.in_waiting >= 20:
+                data = self.ser.read(20)  # read 20 bytes
+                byte19 = data[18]
+                byte20 = data[19]
+                return (byte19, byte20)
+            else:
+                # Not enough data yet
+                return None
+        except Exception as e:
+            print("[ERROR] Failed to read telemetry bytes:", e)
+            return None

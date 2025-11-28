@@ -16,13 +16,13 @@ from gui.dashboard import Dashboard
 from gui.egram_screen import EgramScreen
 
 
-
 class DCMApp:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("Pacemaker DCM")
         self.root.geometry("400x550")
         self.active_user = None #start the program with no one logged in
+        
 
         # Load data from the json file
         self.data_path = os.path.join("data", "users.json")
