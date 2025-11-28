@@ -23,36 +23,28 @@ import time
 #  PARSE TELEMETRY PACKET (20 bytes from MCU)
 # ==============================================
 def parse_egram_packet(packet_bytes):
-    """
-    Parse a 20-byte EGRAM telemetry packet.
-    Format:
-        [0] = 0xAA
-        [1] = 0x22
-        [18] = ventricular sample (int8)
-        [19] = atrial sample (int8)
-    """
     if len(packet_bytes) != 20:
+        print("[DEBUG] Packet ignored: wrong length", len(packet_bytes))
         return None
 
-    if packet_bytes[0] != 0xAA:
+    if packet_bytes[0] != 0xAA or packet_bytes[1] != 0x22:
+        print("[DEBUG] Packet ignored: wrong header", packet_bytes[:2])
         return None
 
-    if packet_bytes[1] != 0x22:
-        return None
-
-    # Extract signed waveform samples
     vent_raw = int.from_bytes(packet_bytes[18:19], byteorder="big", signed=True)
     atr_raw  = int.from_bytes(packet_bytes[19:20], byteorder="big", signed=True)
 
-    # Convert raw int8 → millivolts
     vent_mV = vent_raw / 10.0
     atr_mV  = atr_raw / 10.0
+
+    print(f"[DEBUG] Parsed Packet → atrial: {atr_mV} mV, ventricular: {vent_mV} mV")
 
     return {
         "atrial": [{"t": 0, "value": atr_mV}],
         "ventricular": [{"t": 0, "value": vent_mV}],
         "markers": []
     }
+    
 class EgramScreen(tk.Frame):
     DARK_BG = "#1e1e1e"
     FG_COLOR = "#ffffff"
@@ -395,7 +387,6 @@ class EgramScreen(tk.Frame):
                     time.sleep(0.05)
 
         threading.Thread(target=read_loop, daemon=True).start()
- 
         
 
     def stop_collection(self):
@@ -436,16 +427,20 @@ class EgramScreen(tk.Frame):
         if not self.collecting:
             return
 
+        print("[DEBUG] handle_incoming_data called with payload:", payload)
+
         for channel in ["atrial", "ventricular", "surface"]:
             if channel in payload:
                 gain = self.egm_gain_var.get() if channel != "surface" else self.ecg_gain_var.get()
                 self.plot.update_samples(channel, payload[channel], gain)
                 add_samples(self.session["session_id"], channel, payload[channel])
+                print(f"[DEBUG] {channel} channel updated with {payload[channel]}")
 
         if "markers" in payload:
             for m in payload["markers"]:
                 self.plot.add_marker(m)
                 add_marker(self.session["session_id"], m)
+                print("[DEBUG] Marker added:", m)
 
         self.canvas.draw()
 
