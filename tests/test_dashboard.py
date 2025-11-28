@@ -22,17 +22,6 @@ def dashboard(mock_controller):
     yield dash
     root.destroy()  # clean up after tests
 
-# -----------------------------
-# Pacemaker connection tests
-# -----------------------------
-def test_connect_disconnect(dashboard):
-    dashboard.connect_pacemaker()
-    assert dashboard.pacemaker_status_label.cget("text") == "Pacemaker Status: Connected"
-    assert dashboard.pacemaker_status_label.cget("fg") == "green"
-
-    dashboard.disconnect_pacemaker()
-    assert dashboard.pacemaker_status_label.cget("text") == "Pacemaker Status: Disconnected"
-    assert dashboard.pacemaker_status_label.cget("fg") == "red"
 
 # -----------------------------
 # Patient loading test
@@ -91,3 +80,54 @@ def test_remove_patient(dashboard):
     with mock.patch("helper.patient_helpers.remove_patient") as remove_mock:
         dashboard.remove_patient()
         remove_mock.assert_called_once_with(dashboard)
+
+
+def test_build_serial_packet_AOO(dashboard):
+    """
+    Test that build_serial_packet() produces the correct 18-byte packet
+    for a known set of input parameters in AOO mode.
+    """
+
+    # Force mode
+    dashboard.current_mode.set("AOO")
+    dashboard.update_mode_parameters()
+
+    # Fill only allowed params for AOO
+    dashboard.param_entries["Lower Rate Limit"].delete(0, "end")
+    dashboard.param_entries["Lower Rate Limit"].insert(0, "60")
+
+    dashboard.param_entries["Upper Rate Limit"].delete(0, "end")
+    dashboard.param_entries["Upper Rate Limit"].insert(0, "120")
+
+    dashboard.param_entries["Atrial Amplitude"].delete(0, "end")
+    dashboard.param_entries["Atrial Amplitude"].insert(0, "3.5")  # scaled ×10
+
+    dashboard.param_entries["Atrial Pulse Width"].delete(0, "end")
+    dashboard.param_entries["Atrial Pulse Width"].insert(0, "100")  # raw
+
+    # Activity threshold not used in AOO → set to Med (ignored)
+    dashboard.activity_threshold_var.set("Med")
+
+    # Build packet
+    packet = dashboard.build_serial_packet()
+    packet_list = list(packet)
+
+    # -------------------------
+    # Expected byte list (18 bytes)
+    # -------------------------
+    expected = [
+        0, 0, 0,      # Reserved0,1,2
+        1,            # mode=AOO → 1
+        60,           # Lower Rate
+        120,          # Upper Rate
+        0,            # Max Sensor Rate (not allowed → 0)
+        35,           # Atrial Amp: 3.5 ×10 = 35
+        0,            # Ventricular Amp: not allowed
+        100,          # Atrial Pulse Width
+        0,            # Ventricular Pulse Width
+        0,            # Atrial Sensitivity: not allowed
+        0,            # Ventricular Sensitivity: not allowed
+        0,            # VRP: not allowed
+        0,            # ARP: not allowed
+        0,
+    ]

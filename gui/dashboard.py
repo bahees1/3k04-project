@@ -354,9 +354,14 @@ class Dashboard(tk.Frame):
 
             # Activity Threshold dropdown
             elif key == "Activity Threshold":
-                at_val = self.activity_threshold_var.get()
-                byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 0)
-                print(f"Reading field: Activity Threshold '{at_val}' -> byte {byte_val}")
+                if key in allowed_fields:
+                    at_val = self.activity_threshold_var.get()
+                    byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 0)
+                    print(f"Reading field: Activity Threshold '{at_val}' -> byte {byte_val}")
+                else:
+                    byte_val = 0
+                    print(f"Reading field: Activity Threshold -> not allowed for mode {mode}, defaulting 0")
+
 
             # PVARP always sent as 0
             elif key == "PVARP":
