@@ -47,7 +47,7 @@
                     "VOO": {
                         "parameters": {
                             "lower_rate_limit": "30",
-                            "upper_rate_limit": "56"
+                            "upper_rate_limit": "57"
                         }
                     }
                 }
