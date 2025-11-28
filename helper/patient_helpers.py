@@ -235,6 +235,8 @@ def save_patient_from_dashboard(dashboard):
     packet = dashboard.build_serial_packet()
     packet_list = list(packet)
     print(f"[DEBUG] Built packet ({len(packet_list)} bytes): {packet_list}")
+    
+    dashboard.debug_packet_channels()
 
     # 5. Try sending packet
     try:

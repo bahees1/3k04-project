@@ -445,3 +445,40 @@ class Dashboard(tk.Frame):
             f"DCM Serial Number: {dcm_serial}"
         )
         messagebox.showinfo("About", message)
+
+
+def debug_packet_channels(self):
+    """
+    Prints packet bytes and highlights atrial vs ventricular fields.
+    Helps confirm if the correct params are sent based on mode.
+    """
+    packet_bytes = list(self.build_serial_packet())
+
+    print("\n===== DEBUG: PACKET CHANNEL CHECK =====")
+    print(f"Mode selected: {self.current_mode.get()} ({self.mode_to_uint8()})")
+    print(f"Full packet bytes ({len(packet_bytes)}): {packet_bytes}")
+
+    # Define indices according to PACKET_ORDER
+    field_indices = {key: i for i, key in enumerate(PACKET_ORDER)}
+
+    # Print Atrial fields
+    atrial_fields = ["Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity"]
+    print("\n-- Atrial Fields --")
+    for field in atrial_fields:
+        idx = field_indices.get(field, None)
+        if idx is not None and idx < len(packet_bytes):
+            print(f"{field}: byte[{idx}] = {packet_bytes[idx]}")
+        else:
+            print(f"{field}: not in packet")
+
+    # Print Ventricular fields
+    ventricular_fields = ["Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity"]
+    print("\n-- Ventricular Fields --")
+    for field in ventricular_fields:
+        idx = field_indices.get(field, None)
+        if idx is not None and idx < len(packet_bytes):
+            print(f"{field}: byte[{idx}] = {packet_bytes[idx]}")
+        else:
+            print(f"{field}: not in packet")
+
+    print("=======================================\n")
