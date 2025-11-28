@@ -66,7 +66,7 @@ def clear_fields(dashboard):
 def validate_parameters(params):
     errors = []
 
-    # Helper to check if value is in range
+    # Helper: check if value in numeric range
     def in_range(val, low, high):
         try:
             num = float(val)
@@ -74,71 +74,138 @@ def validate_parameters(params):
         except ValueError:
             return False
 
+    # Helper: check that val is valid increment
+    def valid_increment(val, step):
+        try:
+            num = float(val)
+            return abs((num / step) - round(num / step)) < 1e-6
+        except:
+            return False
+
+    # Special LRL increment helper
+    def valid_lrl_increment(val):
+        try:
+            num = float(val)
+        except:
+            return False
+
+        if 30 <= num <= 50:
+            return valid_increment(num, 5)
+        elif 50 < num <= 90:
+            return valid_increment(num, 1)
+        elif 90 < num <= 175:
+            return valid_increment(num, 5)
+
+        return False
+
+    # --------------------------------------------
     # Lower/Upper Rate Limit
-    if not in_range(params.get("lower_rate_limit", 0), 30, 175):
+    # --------------------------------------------
+    lrl = params.get("lower_rate_limit", 0)
+    url = params.get("upper_rate_limit", 0)
+
+    # LRL range
+    if not in_range(lrl, 30, 175):
         errors.append("Lower Rate Limit must be between 30 and 175 ppm.")
-        
-    if not in_range(params.get("upper_rate_limit", 0), 50, 175):
+    else:
+        # LRL increment
+        if not valid_lrl_increment(lrl):
+            errors.append(
+                "Lower Rate Limit increment invalid. Must follow:\n"
+                "• 30–50: increments of 5\n"
+                "• 50–90: increments of 1\n"
+                "• 90–175: increments of 5"
+            )
+
+    # URL range
+    if not in_range(url, 50, 175):
         errors.append("Upper Rate Limit must be between 50 and 175 ppm.")
     else:
+        # URL > LRL
         try:
-            if float(params["upper_rate_limit"]) <= float(params["lower_rate_limit"]):
+            if float(url) <= float(lrl):
                 errors.append("Upper Rate Limit must be higher than Lower Rate Limit.")
         except:
             pass
 
-    # Common parameter ranges
-    for key, label, low, high, unit in [
-        ("maximum_sensor_rate", "Maximum Sensor Rate", 50, 175, "ppm"),
-        ("atrial_amplitude", "Atrial Amplitude", 0, 5.0, "V"), # x10
-        ("ventricular_amplitude", "Ventricular Amplitude", 0, 5.0, "V"), # x10
-        ("atrial_pulse_width", "Atrial Pulse Width", 1, 30, "ms"),
-        ("ventricular_pulse_width", "Ventricular Pulse Width", 1, 30, "ms"),
-        ("atrial_sensitivity", "Atrial Sensitivity", 0, 5.0, "mV"), # x10
-        ("ventricular_sensitivity", "Ventricular Sensitivity", 0, 5.0, "mV"), # x10
-        ("arp", "ARP", 150, 500, "ms"),
-        ("vrp", "VRP", 150, 500, "ms"),
-        ("pvarp", "PVARP", 150, 500, "ms"),
-        ("reaction_time", "Reaction Time", 10, 50, "s"),
-        ("response_factor", "Response Factor", 1, 16, " "),
-        ("recovery_time", "Recovery Time", 2, 16, "min"),
-        
-        
-    ]:
-        # Check to see if value fits within range
-        val = params.get(key)
-        if val and not in_range(val, low, high):
-            errors.append(f"{label} must be between {low} and {high} {unit}.")
+        # URL increment
+        if not valid_increment(url, 5):
+            errors.append("Upper Rate Limit must increase in steps of 5 ppm.")
 
+    # --------------------------------------------
+    # Common parameters with increment validation
+    # --------------------------------------------
+    for key, label, low, high, unit, step in [
+        ("maximum_sensor_rate", "Maximum Sensor Rate", 50, 175, "ppm", 5),
+
+        ("atrial_amplitude", "Atrial Amplitude", 0, 5.0, "V", 0.1),
+        ("ventricular_amplitude", "Ventricular Amplitude", 0, 5.0, "V", 0.1),
+
+        ("atrial_pulse_width", "Atrial Pulse Width", 1, 30, "ms", 1),
+        ("ventricular_pulse_width", "Ventricular Pulse Width", 1, 30, "ms", 1),
+
+        ("atrial_sensitivity", "Atrial Sensitivity", 0, 5.0, "mV", 0.1),
+        ("ventricular_sensitivity", "Ventricular Sensitivity", 0, 5.0, "mV", 0.1),
+
+        ("arp", "ARP", 150, 500, "ms", 10),
+        ("vrp", "VRP", 150, 500, "ms", 10),
+        ("pvarp", "PVARP", 150, 500, "ms", 10),
+
+        ("reaction_time", "Reaction Time", 10, 50, "s", 10),
+        ("response_factor", "Response Factor", 1, 16, "", 1),
+        ("recovery_time", "Recovery Time", 2, 16, "min", 1),
+    ]:
+        val = params.get(key)
+        if not val:
+            continue
+
+        # Range check
+        if not in_range(val, low, high):
+            errors.append(f"{label} must be between {low} and {high} {unit}.")
+            continue
+
+        # Increment check
+        if not valid_increment(val, step):
+            errors.append(f"{label} must increase in steps of {step} {unit}.")
+
+    # --------------------------------------------
     # Rate Smoothing
+    # --------------------------------------------
     smoothing_allowed = {"0", "3", "6", "9", "12", "15", "18", "21", "25"}
-    
     if params.get("rate_smoothing") and params.get("rate_smoothing") not in smoothing_allowed:
         errors.append("Rate Smoothing must be one of: 0, 3, 6, 9, 12, 15, 18, 21, 25.")
 
+    # --------------------------------------------
     # Activity Threshold
-    activity_allowed = {"V-Low", "Low", "Med-Low", "Med", "Med-High", "High", "V-High"}
-    
+    # --------------------------------------------
+    activity_allowed = {
+        "V-Low", "Low", "Med-Low", "Med", "Med-High", "High", "V-High"
+    }
     if params.get("activity_threshold") and params.get("activity_threshold") not in activity_allowed:
         errors.append("Activity Threshold must be one of: V-Low, Low, Med-Low, Med, Med-High, High, V-High.")
-                        
 
+    # --------------------------------------------
     # Hysteresis
+    # --------------------------------------------
     hysteresis_val = params.get("hysteresis", "")
     if hysteresis_val and hysteresis_val.lower() != "off":
         try:
-            lrl = float(params.get("lower_rate_limit", 0))
-            hys_val = float(hysteresis_val)
-            if abs(hys_val - lrl) > 0.1:
+            lrl_num = float(lrl)
+            hyst_num = float(hysteresis_val)
+            if abs(hyst_num - lrl_num) > 0.1:
                 errors.append("Hysteresis must be 'Off' or equal to the Lower Rate Limit.")
         except ValueError:
             errors.append("Hysteresis must be 'Off' or a numeric value equal to LRL.")
 
-    # Show error popup if invalid
+    # --------------------------------------------
+    # FINAL ERROR POPUP
+    # --------------------------------------------
     if errors:
         messagebox.showerror("Invalid Parameters", "\n".join(errors))
         return False
+
     return True
+
 
 
 # Save patient data from dashboard
