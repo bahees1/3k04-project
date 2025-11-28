@@ -11,23 +11,24 @@ entry_fg = "black"
 
 # Order of parameters in the data packet
 PACKET_ORDER = [
-    "Reserved0", "Reserved1", "Reserved2",
-    "mode",
-    "Lower Rate Limit",
-    "Upper Rate Limit",
-    "Maximum Sensor Rate",
-    "Atrial Amplitude",
-    "Ventricular Amplitude",
-    "Atrial Pulse Width",
-    "Ventricular Pulse Width",
-    "Atrial Sensitivity",
-    "Ventricular Sensitivity",
-    "VRP",
-    "ARP",
-    "Activity Threshold",
-    "Reaction Time",
-    "Response Factor",
-    "Recovery Time"
+    "Fixed16",             # Byte 1 = 0x16
+    "Fixed55",             # Byte 2 = 0x55
+    "mode",                # Byte 3
+    "Lower Rate Limit",    # Byte 4
+    "Upper Rate Limit",    # Byte 5
+    "Maximum Sensor Rate", # Byte 6
+    "Atrial Amplitude",    # Byte 7
+    "Ventricular Amplitude", # Byte 8
+    "Atrial Pulse Width",  # Byte 9
+    "Ventricular Pulse Width", # Byte 10
+    "Atrial Sensitivity",  # Byte 11
+    "Ventricular Sensitivity", # Byte 12
+    "VRP",                 # Byte 13
+    "ARP",                 # Byte 14
+    "Activity Threshold",  # Byte 15
+    "Reaction Time",       # Byte 16
+    "Response Factor",     # Byte 17
+    "Recovery Time"        # Byte 18
 ]
 
 ACTIVITY_THRESHOLD_MAP = {
@@ -336,85 +337,71 @@ class Dashboard(tk.Frame):
         print("====================")
 
         packet_bytes = []
+
+        # Get allowed fields for the current mode
         mode = self.current_mode.get()
         allowed_fields = param_helpers.MODE_PARAMETER_MAP.get(mode, [])
 
         for key in PACKET_ORDER:
-            byte_val = 0  # default
+            byte_val = 0
 
-            # Reserved bytes
-            if key.startswith("Reserved"):
-                byte_val = 0
-                print(f"Reading field: {key} -> Reserved, using 0")
-
-            # Mode byte
+            if key == "Fixed16":
+                byte_val = 0x16
+                print(f"Byte 1: Fixed 0x16")
+            elif key == "Fixed55":
+                byte_val = 0x55
+                print(f"Byte 2: Fixed 0x55")
             elif key == "mode":
                 byte_val = self.mode_to_uint8()
-                print(f"Reading field: mode -> {mode} -> byte {byte_val}")
-
-            # Activity Threshold dropdown
+                print(f"Byte 3: Mode '{mode}' -> {byte_val} (0x{byte_val:02X})")
             elif key == "Activity Threshold":
                 if key in allowed_fields:
                     at_val = self.activity_threshold_var.get()
                     byte_val = ACTIVITY_THRESHOLD_MAP.get(at_val, 0)
-                    print(f"Reading field: Activity Threshold '{at_val}' -> byte {byte_val}")
+                    print(f"Byte {len(packet_bytes)+1}: Activity Threshold '{at_val}' -> {byte_val}")
                 else:
                     byte_val = 0
-                    print(f"Reading field: Activity Threshold -> not allowed for mode {mode}, defaulting 0")
-
-
-            # PVARP always sent as 0
+                    print(f"Byte {len(packet_bytes)+1}: Activity Threshold not allowed for mode {mode}, default 0")
             elif key == "PVARP":
                 byte_val = 0
-                print(f"Reading field: PVARP -> forced 0")
-
-            # Skip parameters not allowed for this mode
+                print(f"Byte {len(packet_bytes)+1}: PVARP forced 0")
             elif key not in allowed_fields:
                 byte_val = 0
-                print(f"Reading field: {key} -> not allowed for mode {mode}, defaulting 0")
-
-            # Allowed parameters: scale if needed
+                print(f"Byte {len(packet_bytes)+1}: {key} not allowed for mode {mode}, default 0")
             else:
                 entry = self.param_entries.get(key)
                 if entry:
                     raw_val = entry.get()
-                    print(f"Reading field: {key} -> raw UI value: '{raw_val}'")
-
+                    print(f"Byte {len(packet_bytes)+1}: {key} raw value '{raw_val}'")
                     try:
                         val = float(raw_val)
-
                         # Scaling rules
                         if key in ["Atrial Amplitude", "Ventricular Amplitude",
                                 "Atrial Sensitivity", "Ventricular Sensitivity"]:
                             send_val = int(val * 10)
-                            print(f"  -> Scaling x10: {val} -> {send_val}")
                         elif key in ["VRP", "ARP"]:
                             send_val = int(val / 10)
-                            print(f"  -> Scaling /10: {val} -> {send_val}")
                         else:
                             send_val = int(val)
-                            print(f"  -> Raw integer param: {send_val}")
-
-                        # Clamp to 0–255
                         byte_val = max(0, min(send_val, 255))
-                        print(f"  -> Final byte: {byte_val} (0x{byte_val:02X})")
-
-                    except Exception as e:
-                        print(f"  -> ERROR converting '{raw_val}': {e}, defaulting 0")
+                        print(f"  -> Scaled byte: {byte_val} (0x{byte_val:02X})")
+                    except:
                         byte_val = 0
+                        print(f"  -> Error parsing {key}, defaulting 0")
                 else:
+                    byte_val = 0
                     print(f"  -> Entry not found for {key}, defaulting 0")
 
             packet_bytes.append(byte_val)
 
-        # Ensure packet length is exactly 18 bytes
+        # Ensure exactly 18 bytes
         packet_bytes = packet_bytes[:18]
 
-        print("\nFINAL PACKET (DECIMAL):")
-        print(packet_bytes)
+        print("\nFINAL PACKET (DECIMAL):", packet_bytes)
         print("====================\n")
 
         return struct.pack(f"{len(packet_bytes)}B", *packet_bytes)
+
 
 
 
@@ -458,26 +445,35 @@ def debug_packet_channels(self):
     print(f"Mode selected: {self.current_mode.get()} ({self.mode_to_uint8()})")
     print(f"Full packet bytes ({len(packet_bytes)}): {packet_bytes}")
 
-    # Define indices according to PACKET_ORDER
+    # Map field names to their byte indices using the new PACKET_ORDER
     field_indices = {key: i for i, key in enumerate(PACKET_ORDER)}
 
-    # Print Atrial fields
+    # Atrial fields
     atrial_fields = ["Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity"]
     print("\n-- Atrial Fields --")
     for field in atrial_fields:
-        idx = field_indices.get(field, None)
+        idx = field_indices.get(field)
         if idx is not None and idx < len(packet_bytes):
-            print(f"{field}: byte[{idx}] = {packet_bytes[idx]}")
+            print(f"{field}: byte[{idx+1}] = {packet_bytes[idx]} (0x{packet_bytes[idx]:02X})")
         else:
             print(f"{field}: not in packet")
 
-    # Print Ventricular fields
+    # Ventricular fields
     ventricular_fields = ["Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity"]
     print("\n-- Ventricular Fields --")
     for field in ventricular_fields:
-        idx = field_indices.get(field, None)
+        idx = field_indices.get(field)
         if idx is not None and idx < len(packet_bytes):
-            print(f"{field}: byte[{idx}] = {packet_bytes[idx]}")
+            print(f"{field}: byte[{idx+1}] = {packet_bytes[idx]} (0x{packet_bytes[idx]:02X})")
+        else:
+            print(f"{field}: not in packet")
+
+    # Other key fields
+    print("\n-- Other Key Fields --")
+    for field in ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Activity Threshold"]:
+        idx = field_indices.get(field)
+        if idx is not None and idx < len(packet_bytes):
+            print(f"{field}: byte[{idx+1}] = {packet_bytes[idx]} (0x{packet_bytes[idx]:02X})")
         else:
             print(f"{field}: not in packet")
 
